@@ -63,8 +63,8 @@ void do_tests()
 {
   imu.read();
 
-  snprintf(report, sizeof(report), "A: %6d %6d    G: %6d",
-    imu.a_x, imu.a_z, imu.g_y );
+  snprintf(report, sizeof(report), "A: %6d %6d    w: %6d",
+    imu.a_x, imu.a_z, imu.w );
   Serial.println(report);
 }
 

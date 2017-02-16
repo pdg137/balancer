@@ -7,7 +7,7 @@ void IMU::read()
   device.read();
   a_x = device.a.x;
   a_z = device.a.z;
-  g_y = device.g.y - g_y_zero;
+  w = ((int32_t)(device.g.y - g_y_zero))*10/33; // convert full-scale 1000 deg/s to deg/s*10^-1
 }
 
 void IMU::calibrate()
@@ -38,6 +38,6 @@ void IMU::init()
     while (1);
   }
   device.enableDefault();
-//  imu.writeReg(CTRL2_G, 0x80);
+  device.writeReg(LSM6::CTRL2_G, 0b10001000); // 1000 deg/s
 }
 

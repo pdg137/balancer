@@ -5,14 +5,15 @@ class IMU
 {
   public:
 
-  IMU(void) {}
-  
-  void init();
-  void calibrate();
-  void read();
+    IMU(void) {}
 
-  int16_t a_x_zero, a_z_zero, g_y_zero;
-  int16_t a_x, a_z, g_y;
-  LSM6 device;
+    void init();
+    void calibrate();
+    void read();
+
+    int16_t a_x_zero, a_z_zero, g_y_zero;
+    int16_t a_x, a_z;
+    int16_t w; // deg/s * 10^-1
+    LSM6 device;
 };
 
