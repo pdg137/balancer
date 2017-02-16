@@ -4,9 +4,10 @@
 #include <Romi32U4.h>
 #include <Wire.h>
 #include <LSM6.h>
+#include "imu.h"
 
 char report[80];
-LSM6 imu;
+IMU imu;
 
 void print(char *string)
 {
@@ -23,31 +24,6 @@ void help()
   print("Balancer 0.0.1");
   print("c) Calibrate");
   print("t) Start/stop tests");
-}
-
-int16_t a_x_zero, a_z_zero, g_y_zero;
-const int16_t CALIBRATION_ITERATIONS=100;
-void calibrate()
-{
-  print("Calibrating...");
-  int i;
-  int32_t a_x_total, a_z_total, g_y_total;
-  for(i=0;i<CALIBRATION_ITERATIONS;i++)
-  {
-    imu.read();
-    a_x_total += imu.a.x;
-    a_z_total += imu.a.z;
-    g_y_total += imu.g.y;
-    delay(1);
-  }
-
-  a_x_zero = a_x_total / CALIBRATION_ITERATIONS;
-  a_z_zero = a_z_total / CALIBRATION_ITERATIONS;
-  g_y_zero = g_y_total / CALIBRATION_ITERATIONS;
-
-  snprintf(report, sizeof(report), "A: %6d %6d    G: %6d",
-    a_x_zero, a_z_zero, g_y_zero);
-  print("Done.");
 }
 
 bool testing = 0;
@@ -68,7 +44,11 @@ void input()
   switch(c)
   {
   case 'c':
-    calibrate();
+    print("Calibrating...");
+    imu.calibrate();
+    snprintf(report, sizeof(report), "A: %6d %6d    G: %6d",
+      imu.a_x_zero, imu.a_z_zero, imu.g_y_zero);
+  print(report);
     break;
   case 't':
     start_stop_tests();
@@ -84,22 +64,13 @@ void do_tests()
   imu.read();
 
   snprintf(report, sizeof(report), "A: %6d %6d    G: %6d",
-    imu.a.x - a_x_zero, imu.a.z - a_z_zero,
-    imu.g.y - g_y_zero);
+    imu.a_x, imu.a_z, imu.g_y );
   Serial.println(report);
 }
 
 void setup()
 {
-  Wire.begin();
-
-  if (!imu.init())
-  {
-    Serial.println("Failed to detect and initialize IMU!");
-    while (1);
-  }
-  imu.enableDefault();
-  //imu.writeReg(CTRL2_G, 0x80);
+  imu.init();
 }
 
 void loop()
