@@ -7,7 +7,7 @@ void IMU::read()
   device.read();
   a_x = device.a.x;
   a_z = device.a.z;
-  w = ((int32_t)(device.g.y - g_y_zero))*10/33; // convert full-scale 1000 deg/s to deg/s*10^-1
+  w = (((int32_t)device.g.y)*1000 - g_y_zero)*35/100000; // convert full-scale 1000 deg/s to deg/s*10^-1
 }
 
 void IMU::calibrate()
@@ -23,9 +23,9 @@ void IMU::calibrate()
     delay(1);
   }
 
-  a_x_zero = a_x_total / CALIBRATION_ITERATIONS;
-  a_z_zero = a_z_total / CALIBRATION_ITERATIONS;
-  g_y_zero = g_y_total / CALIBRATION_ITERATIONS;
+  a_x_zero = a_x_total * 1000 / CALIBRATION_ITERATIONS;
+  a_z_zero = a_z_total * 1000 / CALIBRATION_ITERATIONS;
+  g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
 }
 
 void IMU::init()

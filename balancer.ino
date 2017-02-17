@@ -5,9 +5,11 @@
 #include <Wire.h>
 #include <LSM6.h>
 #include "imu.h"
+#include "state.h"
 
 char report[80];
 IMU imu;
+State state;
 
 void print(char *string)
 {
@@ -30,6 +32,7 @@ bool testing = 0;
 void start_stop_tests()
 {
   testing = !testing;
+  state.reset();
 }
 
 void input()
@@ -59,13 +62,34 @@ void input()
   Serial.print("> ");
 }
 
+
 void do_tests()
 {
+  static uint8_t cycle = 0;
+  
   imu.read();
+  state.integrate(imu.w, millis());
 
-  snprintf(report, sizeof(report), "A: %6d %6d    w: %6d",
-    imu.a_x, imu.a_z, imu.w );
-  Serial.println(report);
+  cycle += 1;
+  if(cycle == 10)
+  {
+    int32_t angle = state.angle; // *10^4
+    bool negative = false;
+
+    if(angle < 0)
+    {
+      angle = -angle;
+      negative = true;
+    }
+
+    int16_t angle_int = angle/10000;
+    int16_t angle_frac = angle - angle_int*10000L;
+
+    snprintf(report, sizeof(report), "angle: %c%d.%04d",
+      negative ? '-' : '+', angle_int, angle_frac );
+    Serial.println(report);
+    cycle = 0;
+  }
 }
 
 void setup()
