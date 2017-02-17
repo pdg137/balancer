@@ -77,5 +77,6 @@ void loop()
 {
   if(testing) do_tests();
 
+  delay(10);
   input();
 }

@@ -38,6 +38,6 @@ void IMU::init()
     while (1);
   }
   device.enableDefault();
-  device.writeReg(LSM6::CTRL2_G, 0b10001000); // 1000 deg/s
+  device.writeReg(LSM6::CTRL2_G, 0b01011000); // 208 Hz, 1000 deg/s
 }
 
