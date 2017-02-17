@@ -8,7 +8,10 @@ class State
   uint16_t count;
   int32_t angle; // degrees * 10^-4
   unsigned long last_millis = 0;
-  bool last_millis_set = false; 
+  bool last_millis_set = false;
+
+  enum general_state_t { BALANCING, ON_BOTTOM, ON_TOP, UNSTABLE }; 
+  general_state_t general_state;
 
   void reset()
   {
@@ -17,6 +20,6 @@ class State
   }
 
   // w: deg/s * 10^-1
-  void integrate(int16_t w, int16_t current_millis);
+  void integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_y);
 };
 

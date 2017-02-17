@@ -49,8 +49,7 @@ void input()
   case 'c':
     print("Calibrating...");
     imu.calibrate();
-    snprintf(report, sizeof(report), "A: %6d %6d    G: %6d",
-      imu.a_x_zero, imu.a_z_zero, imu.g_y_zero);
+    snprintf(report, sizeof(report), "Gyro calibration: %6d", imu.g_y_zero);
   print(report);
     break;
   case 't':
@@ -68,7 +67,7 @@ void do_tests()
   static uint8_t cycle = 0;
   
   imu.read();
-  state.integrate(imu.w, millis());
+  state.integrate(millis(), imu.w, imu.a_x, imu.a_z);
 
   cycle += 1;
   if(cycle == 10)
@@ -85,7 +84,17 @@ void do_tests()
     int16_t angle_int = angle/10000;
     int16_t angle_frac = angle - angle_int*10000L;
 
-    snprintf(report, sizeof(report), "angle: %c%d.%04d",
+    char general_state;
+    switch(state.general_state)
+    {
+    case State::BALANCING: general_state = '|'; break;
+    case State::ON_TOP:    general_state = '/'; break;
+    case State::ON_BOTTOM: general_state = '\\'; break;
+    case State::UNSTABLE:  general_state = '*'; break;
+    }
+
+    snprintf(report, sizeof(report), "%c angle: %c%d.%04d",
+      general_state,
       negative ? '-' : '+', angle_int, angle_frac );
     Serial.println(report);
     cycle = 0;
