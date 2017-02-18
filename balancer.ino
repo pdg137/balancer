@@ -10,6 +10,7 @@
 char report[80];
 IMU imu;
 State state;
+Romi32U4Motors motors;
 
 void print(char *string)
 {
@@ -23,9 +24,10 @@ char read()
 
 void help()
 {
-  print("Balancer 0.0.1");
+  print("Balancer 0.0.2");
   print("c) Calibrate");
   print("t) Start/stop tests");
+  print("m) Start/stop motors");
 }
 
 bool testing = 0;
@@ -33,6 +35,35 @@ void start_stop_tests()
 {
   testing = !testing;
   state.reset();
+}
+
+void set_motors(int16_t speed)
+{
+  motors.setSpeeds(-speed, -speed);
+}
+
+bool run_motors = 0;
+void start_stop_motors()
+{
+  run_motors = !run_motors;
+}
+
+void update_motors()
+{
+  if(!run_motors || state.general_state != State::BALANCING)
+  {
+    set_motors(0);
+    return;
+  }
+
+  if(state.angle < 0 && imu.w < 0)
+    set_motors(-50);
+  else if(state.angle > 0 && imu.w > 0)
+    set_motors(50);
+  else
+  {
+    set_motors(-imu.w * 26/10);
+  }
 }
 
 void input()
@@ -55,19 +86,24 @@ void input()
   case 't':
     start_stop_tests();
     break;
+  case 'm':
+    start_stop_motors();
+    break;
   default:
     help();
   }
   Serial.print("> ");
 }
 
+void integrate()
+{
+  imu.read();
+  state.integrate(millis(), imu.w, imu.a_x, imu.a_z);
+}
 
 void do_tests()
 {
   static uint8_t cycle = 0;
-  
-  imu.read();
-  state.integrate(millis(), imu.w, imu.a_x, imu.a_z);
 
   cycle += 1;
   if(cycle == 10)
@@ -108,6 +144,8 @@ void setup()
 
 void loop()
 {
+  integrate();
+  update_motors();
   if(testing) do_tests();
 
   delay(10);
