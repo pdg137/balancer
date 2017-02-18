@@ -50,6 +50,8 @@ void start_stop_motors()
 
 void update_motors()
 {
+  static int16_t speed;
+  int16_t target, ramp;
   if(!run_motors || state.general_state != State::BALANCING)
   {
     set_motors(0);
@@ -57,13 +59,28 @@ void update_motors()
   }
 
   if(state.angle < 0 && imu.w < 0)
-    set_motors(-50);
+  {
+    target=-150;
+    ramp = 20;
+  }
   else if(state.angle > 0 && imu.w > 0)
-    set_motors(50);
+  {
+    target=150;
+    ramp = 20;
+  }
   else
   {
-    set_motors(-imu.w * 26/10);
+    target = -imu.w * 26/10;
+    if(target > 150) target = 150;
+    if(target < -150) target = -150;
+    ramp = 10;
   }
+
+  if(speed < target)
+    speed += ramp;
+  else if(speed > target)
+    speed -= ramp;
+  set_motors(speed);
 }
 
 void input()
