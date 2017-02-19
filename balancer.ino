@@ -107,7 +107,7 @@ void update_motors()
       target = dir*150;
       ledGreen(1);
     }
-    ramp = dir*(target_a - intercept)/40000;
+    ramp = dir*(target_a - intercept)/60000;
     if(ramp > 30)
       ramp = 30;
     if(ramp < 0) // shouldn't happen
@@ -207,9 +207,17 @@ void setup()
 void loop()
 {
   integrate();
-  update_motors();
   if(testing) do_tests();
-  if(millis() > 1000 && !imu.calibrated) calibrate();
+
+  uint16_t ms = millis();
+  if(ms > 1000 && !imu.calibrated) calibrate();
+
+  if(ms > 2000 && ms < 2400)
+    set_motors(-200);
+  else if(ms >= 2400 && ms < 2500)
+    set_motors(+200);
+  else
+    update_motors();
 
   delay(10);
   input();
