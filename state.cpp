@@ -2,8 +2,12 @@
 
 // w: deg/s * 10^-1
 // angle: degrees * 10^-4
-void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_z)
+void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_z,
+  int16_t counts_left)
 {
+  distance += counts_left - last_counts_left;
+  last_counts_left = counts_left;
+
   if(!last_millis_set)
   {
     last_millis = current_millis;

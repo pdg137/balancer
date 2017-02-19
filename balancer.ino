@@ -11,6 +11,7 @@ char report[80];
 IMU imu;
 State state;
 Romi32U4Motors motors;
+Romi32U4Encoders encoders;
 
 void print(char *string)
 {
@@ -59,11 +60,11 @@ void update_motors()
   }
 
   int32_t target_a = 15*10000; // 15 degrees
-  static int8_t dir = -1;
-  if(speed > 50 && state.angle < 0)
-    dir = -1;
-  if(speed < -50 && state.angle > 0)
+  static int8_t dir = 1;
+  if(state.distance < -200)
     dir = +1;
+  else if(state.distance > 200)
+    dir = -1;
 
   ledRed(0);
   ledYellow(0);
@@ -80,6 +81,9 @@ void update_motors()
   {
     // above the target angle; just wait
     target = speed;
+    ledRed(1);
+    ledGreen(1);
+    ledYellow(1);
   }
   else if(dir*state.angle_rate > 0)
   {
@@ -103,7 +107,7 @@ void update_motors()
       target = dir*150;
       ledGreen(1);
     }
-    ramp = dir*(target_a - intercept)/20000;
+    ramp = dir*(target_a - intercept)/40000;
     if(ramp > 30)
       ramp = 30;
     if(ramp < 0) // shouldn't happen
@@ -154,7 +158,7 @@ void input()
 void integrate()
 {
   imu.read();
-  state.integrate(millis(), imu.w, imu.a_x, imu.a_z);
+  state.integrate(millis(), imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft());
 }
 
 void do_tests()
@@ -185,10 +189,11 @@ void do_tests()
     case State::UNSTABLE:  general_state = '*'; break;
     }
 
-    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d",
+    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d",
       general_state,
       negative ? '-' : '+', angle_int, angle_frac,
-      state.angle_rate);
+      (int16_t)state.angle_rate,
+      (int16_t)state.distance);
     Serial.println(report);
     cycle = 0;
   }
