@@ -7,6 +7,7 @@ class State
 
   uint16_t count;
   int32_t angle; // degrees * 10^-4
+  int32_t angle_rate; // degrees/s * 10-1
   unsigned long last_millis = 0;
   bool last_millis_set = false;
 

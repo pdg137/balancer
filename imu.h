@@ -9,6 +9,7 @@ class IMU
     void calibrate();
     void read();
 
+    bool calibrated = false;
     int32_t g_y_zero;
     int16_t a_x, a_z;
     int16_t w; // deg/s * 10^-1

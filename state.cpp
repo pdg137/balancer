@@ -35,7 +35,8 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
   uint8_t dt = current_millis - last_millis;
   last_millis += dt;
 
-  angle += ((int32_t)w) * dt;
+  angle_rate = w;
+  angle += angle_rate * dt;
 
   switch(general_state)
   {
