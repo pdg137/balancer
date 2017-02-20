@@ -22,6 +22,7 @@ void IMU::calibrate()
   }
 
   g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
+  calibrated = true;
 }
 
 void IMU::init()

@@ -11,6 +11,7 @@ char report[80];
 IMU imu;
 State state;
 Romi32U4Motors motors;
+Romi32U4Encoders encoders;
 
 void print(char *string)
 {
@@ -24,7 +25,7 @@ char read()
 
 void help()
 {
-  print("Balancer 0.0.2");
+  print("Balancer 0.0.3");
   print("b) Check batteries");
   print("c) Calibrate");
   print("t) Start/stop tests");
@@ -43,7 +44,7 @@ void set_motors(int16_t speed)
   motors.setSpeeds(-speed, -speed);
 }
 
-bool run_motors = 0;
+bool run_motors = true;
 void start_stop_motors()
 {
   run_motors = !run_motors;
@@ -59,22 +60,59 @@ void update_motors()
     return;
   }
 
-  if(state.angle < 0 && imu.w < 0)
+  int32_t target_a = 15*10000; // 15 degrees
+  static int8_t dir = 1;
+  if(state.distance < -200)
+    dir = +1;
+  else if(state.distance > 200)
+    dir = -1;
+
+  ledRed(0);
+  ledYellow(0);
+  ledGreen(0);
+  ramp = 20;
+
+  if(dir*state.angle < 0)
   {
-    target=-150;
+    // wrong half
+    target = -150*dir;
     ramp = 20;
   }
-  else if(state.angle > 0 && imu.w > 0)
+  else if(dir*state.angle < dir*target_a)
   {
-    target=150;
-    ramp = 20;
+    // above the target angle; just wait
+    target = speed;
+    ledRed(1);
+    ledGreen(1);
+    ledYellow(1);
+  }
+  else if(dir*state.angle_rate > 0)
+  {
+    // below the target angle and falling - catch
+    target = 150*dir;
+    ledRed(1);
   }
   else
   {
-    target = -imu.w * 26/10;
-    if(target > 150) target = 150;
-    if(target < -150) target = -150;
-    ramp = 10;
+    // below the target angle and rising - aim for the angle at speed 0
+    int32_t intercept = state.angle - state.angle_rate*state.angle_rate*12/state.angle*1000;
+    if(dir*intercept < dir*target_a)
+    {
+      // aiming too high
+      target = -dir*150;
+      ledYellow(1);
+    }
+    else
+    {
+      // aiming too low
+      target = dir*150;
+      ledGreen(1);
+    }
+    ramp = dir*(target_a - intercept)/60000;
+    if(ramp > 30)
+      ramp = 30;
+    if(ramp < 0) // shouldn't happen
+      ramp = 0;
   }
 
   if(speed < target)
@@ -82,6 +120,14 @@ void update_motors()
   else if(speed > target)
     speed -= ramp;
   set_motors(speed);
+}
+
+void calibrate()
+{
+  print("Calibrating...");
+  imu.calibrate();
+  snprintf(report, sizeof(report), "Gyro calibration: %6d", imu.g_y_zero);
+  print(report);
 }
 
 void input()
@@ -100,10 +146,7 @@ void input()
     print(report);
     break;
   case 'c':
-    print("Calibrating...");
-    imu.calibrate();
-    snprintf(report, sizeof(report), "Gyro calibration: %6d", imu.g_y_zero);
-    print(report);
+    calibrate();
     break;
   case 't':
     start_stop_tests();
@@ -120,7 +163,7 @@ void input()
 void integrate()
 {
   imu.read();
-  state.integrate(millis(), imu.w, imu.a_x, imu.a_z);
+  state.integrate(millis(), imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft());
 }
 
 void do_tests()
@@ -151,9 +194,11 @@ void do_tests()
     case State::UNSTABLE:  general_state = '*'; break;
     }
 
-    snprintf(report, sizeof(report), "%c angle: %c%d.%04d",
+    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d",
       general_state,
-      negative ? '-' : '+', angle_int, angle_frac );
+      negative ? '-' : '+', angle_int, angle_frac,
+      (int16_t)state.angle_rate,
+      (int16_t)state.distance);
     Serial.println(report);
     cycle = 0;
   }
@@ -167,8 +212,17 @@ void setup()
 void loop()
 {
   integrate();
-  update_motors();
   if(testing) do_tests();
+
+  uint16_t ms = millis();
+  if(ms > 1000 && !imu.calibrated) calibrate();
+
+  if(ms > 2000 && ms < 2400)
+    set_motors(-200);
+  else if(ms >= 2400 && ms < 2500)
+    set_motors(+200);
+  else
+    update_motors();
 
   delay(10);
   input();
