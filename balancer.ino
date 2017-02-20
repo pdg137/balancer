@@ -25,6 +25,7 @@ char read()
 void help()
 {
   print("Balancer 0.0.2");
+  print("b) Check batteries");
   print("c) Calibrate");
   print("t) Start/stop tests");
   print("m) Start/stop motors");
@@ -94,11 +95,15 @@ void input()
   Serial.println(c);
   switch(c)
   {
+  case 'b':
+    snprintf(report, sizeof(report), "Battery voltage: %d mV", readBatteryMillivolts());
+    print(report);
+    break;
   case 'c':
     print("Calibrating...");
     imu.calibrate();
     snprintf(report, sizeof(report), "Gyro calibration: %6d", imu.g_y_zero);
-  print(report);
+    print(report);
     break;
   case 't':
     start_stop_tests();
