@@ -11,6 +11,7 @@ class State
   unsigned long last_millis = 0;
   bool last_millis_set = false;
   int32_t distance;
+  int16_t speed;
   int16_t last_counts_left;
 
   enum general_state_t { BALANCING, ON_BOTTOM, ON_TOP, UNSTABLE }; 

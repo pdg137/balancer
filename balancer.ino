@@ -41,6 +41,10 @@ void start_stop_tests()
 
 void set_motors(int16_t speed)
 {
+  if(speed > 0)
+    speed += 30;
+  if(speed < 0)
+    speed -= 30;
   motors.setSpeeds(-speed, -speed);
 }
 
@@ -52,8 +56,6 @@ void start_stop_motors()
 
 void update_motors()
 {
-  static int16_t speed;
-  int16_t target, ramp;
   if(!run_motors || state.general_state != State::BALANCING)
   {
     ledRed(0);
@@ -66,7 +68,6 @@ void update_motors()
   ledRed(0);
   ledYellow(0);
   ledGreen(0);
-  ramp = 20;
 
   int32_t diff = state.angle_rate + state.angle/200;
   if(diff < 0 && state.angle > 0)
@@ -76,7 +77,18 @@ void update_motors()
   else
     ledGreen(1);
 
-  set_motors(0);
+  static int16_t speed;
+
+  speed += diff / 100;
+  speed += state.distance/100;
+  speed += state.speed/4;
+
+  if(speed > 150)
+    speed = 150;
+  else if(speed < -150)
+    speed = -150;
+  
+  set_motors(speed);
 }
 
 void calibrate()
@@ -151,11 +163,12 @@ void do_tests()
     case State::UNSTABLE:  general_state = '*'; break;
     }
 
-    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d",
+    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d %d",
       general_state,
       negative ? '-' : '+', angle_int, angle_frac,
       (int16_t)state.angle_rate,
-      (int16_t)state.distance);
+      (int16_t)state.distance,
+      state.speed);
     Serial.println(report);
     cycle = 0;
   }

@@ -5,6 +5,7 @@
 void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_z,
   int16_t counts_left)
 {
+  speed = (counts_left - last_counts_left);
   distance += counts_left - last_counts_left;
   last_counts_left = counts_left;
 
