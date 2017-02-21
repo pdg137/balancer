@@ -39,9 +39,8 @@ void start_stop_tests()
   state.reset();
 }
 
-void set_motors(int16_t speed)
+void set_motors(int16_t left, int16_t right)
 {
-  int16_t left = speed, right = speed;
   if(left > 0)
     left += 30;
   if(left < 0)
@@ -52,6 +51,15 @@ void set_motors(int16_t speed)
   if(right < 0);
     right -= 50;
   motors.setSpeeds(-left, -right);
+}
+
+int16_t limit(int16_t speed, int16_t l)
+{
+  if(speed > l)
+    speed = l;
+  else if(speed < -l)
+    speed = -l;
+  return speed;
 }
 
 bool run_motors = true;
@@ -67,7 +75,7 @@ void update_motors()
     ledRed(0);
     ledYellow(0);
     ledGreen(0);
-    set_motors(0);
+    set_motors(0, 0);
     return;
   }
 
@@ -86,15 +94,15 @@ void update_motors()
   static int16_t speed;
 
   speed += diff / 100;
-  speed += state.distance/100;
-  speed += state.speed/4;
 
-  if(speed > 150)
-    speed = 150;
-  else if(speed < -150)
-    speed = -150;
+  speed += state.distance_left/200 + state.distance_right/200;
+  speed += state.speed_left/8 + state.speed_right/8;
+
+  int16_t distance_diff = state.distance_left - state.distance_right;
+  int16_t speed_left = limit(speed - distance_diff/10, 150);
+  int16_t speed_right = limit(speed + distance_diff/10, 150);
   
-  set_motors(speed);
+  set_motors(speed_left, speed_right);
 }
 
 void calibrate()
@@ -138,7 +146,7 @@ void input()
 void integrate()
 {
   imu.read();
-  state.integrate(millis(), imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft());
+  state.integrate(millis(), imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft(),  encoders.getCountsRight());
 }
 
 void do_tests()
@@ -173,8 +181,8 @@ void do_tests()
       general_state,
       negative ? '-' : '+', angle_int, angle_frac,
       (int16_t)state.angle_rate,
-      (int16_t)state.distance,
-      state.speed);
+      (int16_t)state.distance_left,
+      state.speed_left);
     Serial.println(report);
     cycle = 0;
   }

@@ -3,11 +3,15 @@
 // w: deg/s * 10^-1
 // angle: degrees * 10^-4
 void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_z,
-  int16_t counts_left)
+  int16_t counts_left, int16_t counts_right)
 {
-  speed = (counts_left - last_counts_left);
-  distance += counts_left - last_counts_left;
+  speed_left = (counts_left - last_counts_left);
+  distance_left += counts_left - last_counts_left - 5;
   last_counts_left = counts_left;
+
+  speed_right = (counts_right - last_counts_right);
+  distance_right += counts_right - last_counts_right - 5;
+  last_counts_right = counts_right;
 
   if(!last_millis_set)
   {
@@ -31,7 +35,8 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
     {
       general_state = ON_TOP;
     }
-    distance = 0;
+    distance_left = 0;
+    distance_right = 0;
   }
   else
   {
