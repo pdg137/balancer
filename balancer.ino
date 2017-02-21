@@ -63,78 +63,20 @@ void update_motors()
     return;
   }
 
-  int32_t target_a = 3L*10000; // 5 degrees
-  static int8_t dir = -1;
-
-  if(state.distance < -100)
-    dir = +1;
-  else if(state.distance > 100)
-    dir = -1;
-
   ledRed(0);
   ledYellow(0);
   ledGreen(0);
   ramp = 20;
 
-  if(dir*state.angle < 0 && dir*state.angle_rate < 0)
-  {
-    // wrong half, falling
-    target = -300*dir;
-    ramp = 10;
-  }
-  else if(dir*state.angle < 0 && dir*state.angle_rate > 0)
-  {
-    // wrong half, rising
-    int32_t angle_dir = state.angle_rate < 0 ? -1 : 1;
-    int32_t intercept = state.angle - angle_dir*state.angle_rate*300000/state.angle*100;
-
-    target = dir*intercept/100;
-    ramp = 10;
-  }
-  else if(dir*state.angle_rate < 0 && dir*state.angle < dir*target_a)
-  {
-    // above the target angle; just wait
-    target = speed;
+  int32_t diff = state.angle_rate + state.angle/200;
+  if(diff < 0 && state.angle > 0)
     ledRed(1);
-    ledGreen(1);
+  else if(diff > 0 && state.angle < 0)
     ledYellow(1);
-  }
-  else if(dir*state.angle_rate > 0)
-  {
-    // below the target angle and falling - catch
-    target = 300*dir;
-    ramp = 20;
-    ledRed(1);
-  }
   else
-  {
-    // below the target angle and rising - aim for the angle at speed 0
-    int32_t angle_dir = state.angle_rate < 0 ? -1 : 1;
-    int32_t intercept = state.angle - angle_dir*state.angle_rate*300000/state.angle*100; // measured angle_rate/(angle*10^4) ~ constant
-    if(dir*intercept < dir*target_a)
-    {
-      // aiming too high
-      target = -dir*150;
-      ledYellow(1);
-    }
-    else
-    {
-      // aiming too low
-      target = dir*150;
-      ledGreen(1);
-    }
-    ramp = (target_a - intercept)/3000;
-    if(ramp < 0)
-      ramp = -ramp;
-    if(ramp > 30)
-      ramp = 30;
-  }
+    ledGreen(1);
 
-  if(speed < target)
-    speed += ramp;
-  else if(speed > target)
-    speed -= ramp;
-  set_motors(speed);
+  set_motors(0);
 }
 
 void calibrate()
