@@ -56,15 +56,19 @@ void update_motors()
   int16_t target, ramp;
   if(!run_motors || state.general_state != State::BALANCING)
   {
+    ledRed(0);
+    ledYellow(0);
+    ledGreen(0);
     set_motors(0);
     return;
   }
 
-  int32_t target_a = 15*10000; // 15 degrees
-  static int8_t dir = 1;
-  if(state.distance < -200)
+  int32_t target_a = 3L*10000; // 5 degrees
+  static int8_t dir = -1;
+
+  if(state.distance < -100)
     dir = +1;
-  else if(state.distance > 200)
+  else if(state.distance > 100)
     dir = -1;
 
   ledRed(0);
@@ -72,13 +76,22 @@ void update_motors()
   ledGreen(0);
   ramp = 20;
 
-  if(dir*state.angle < 0)
+  if(dir*state.angle < 0 && dir*state.angle_rate < 0)
   {
-    // wrong half
-    target = -150*dir;
-    ramp = 20;
+    // wrong half, falling
+    target = -300*dir;
+    ramp = 10;
   }
-  else if(dir*state.angle < dir*target_a)
+  else if(dir*state.angle < 0 && dir*state.angle_rate > 0)
+  {
+    // wrong half, rising
+    int32_t angle_dir = state.angle_rate < 0 ? -1 : 1;
+    int32_t intercept = state.angle - angle_dir*state.angle_rate*300000/state.angle*100;
+
+    target = dir*intercept/100;
+    ramp = 10;
+  }
+  else if(dir*state.angle_rate < 0 && dir*state.angle < dir*target_a)
   {
     // above the target angle; just wait
     target = speed;
@@ -89,13 +102,15 @@ void update_motors()
   else if(dir*state.angle_rate > 0)
   {
     // below the target angle and falling - catch
-    target = 150*dir;
+    target = 300*dir;
+    ramp = 20;
     ledRed(1);
   }
   else
   {
     // below the target angle and rising - aim for the angle at speed 0
-    int32_t intercept = state.angle - state.angle_rate*state.angle_rate*12/state.angle*1000;
+    int32_t angle_dir = state.angle_rate < 0 ? -1 : 1;
+    int32_t intercept = state.angle - angle_dir*state.angle_rate*300000/state.angle*100; // measured angle_rate/(angle*10^4) ~ constant
     if(dir*intercept < dir*target_a)
     {
       // aiming too high
@@ -108,11 +123,11 @@ void update_motors()
       target = dir*150;
       ledGreen(1);
     }
-    ramp = dir*(target_a - intercept)/60000;
+    ramp = (target_a - intercept)/3000;
+    if(ramp < 0)
+      ramp = -ramp;
     if(ramp > 30)
       ramp = 30;
-    if(ramp < 0) // shouldn't happen
-      ramp = 0;
   }
 
   if(speed < target)
@@ -217,12 +232,14 @@ void loop()
   uint16_t ms = millis();
   if(ms > 1000 && !imu.calibrated) calibrate();
 
+/*
   if(ms > 2000 && ms < 2400)
     set_motors(-200);
   else if(ms >= 2400 && ms < 2500)
     set_motors(+200);
-  else
+  else*/
     update_motors();
+
 
   delay(10);
   input();

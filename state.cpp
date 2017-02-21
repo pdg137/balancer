@@ -30,6 +30,7 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
     {
       general_state = ON_TOP;
     }
+    distance = 0;
   }
   else
   {
@@ -49,10 +50,10 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
     angle = angle*999/1000;
     break;
   case ON_TOP:
-    angle = -1070000;
+    angle = -1090000;
     break;
   case ON_BOTTOM:
-    angle = 1130000;
+    angle = 1100000;
     break;
   }
 
