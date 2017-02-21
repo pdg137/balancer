@@ -41,11 +41,17 @@ void start_stop_tests()
 
 void set_motors(int16_t speed)
 {
-  if(speed > 0)
-    speed += 30;
-  if(speed < 0)
-    speed -= 30;
-  motors.setSpeeds(-speed, -speed);
+  int16_t left = speed, right = speed;
+  if(left > 0)
+    left += 30;
+  if(left < 0)
+    left -= 30;
+
+  if(right > 0)
+    right += 50;
+  if(right < 0);
+    right -= 50;
+  motors.setSpeeds(-left, -right);
 }
 
 bool run_motors = true;
