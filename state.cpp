@@ -6,11 +6,11 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
   int16_t counts_left, int16_t counts_right)
 {
   speed_left = (counts_left - last_counts_left);
-  distance_left += counts_left - last_counts_left - 5;
+  distance_left += counts_left - last_counts_left - drive_speed_left;
   last_counts_left = counts_left;
 
   speed_right = (counts_right - last_counts_right);
-  distance_right += counts_right - last_counts_right - 5;
+  distance_right += counts_right - last_counts_right - drive_speed_right;
   last_counts_right = counts_right;
 
   if(!last_millis_set)

@@ -193,22 +193,49 @@ void setup()
   imu.init();
 }
 
+enum phase_t { PHASE_WAIT, PHASE_FAST, PHASE_BACK, PHASE_FORWARD, PHASE_LEFT };
+
+phase_t phase = PHASE_WAIT;
+
 void loop()
 {
   integrate();
   if(testing) do_tests();
 
   uint16_t ms = millis();
-  if(ms > 1000 && !imu.calibrated) calibrate();
 
-/*
-  if(ms > 2000 && ms < 2400)
-    set_motors(-200);
-  else if(ms >= 2400 && ms < 2500)
-    set_motors(+200);
-  else*/
-    update_motors();
-
+  switch(phase)
+  {
+    case PHASE_WAIT:
+      set_motors(0,0);
+      if(ms > 1000 && !imu.calibrated) calibrate();
+      if(ms > 2000) phase = PHASE_FAST;
+      break;
+    case PHASE_FAST:
+      set_motors(-200, -200);
+      if(state.speed_left > 10 || ms > 2500)
+        phase = PHASE_BACK;
+      break;
+    case PHASE_BACK:
+      set_motors(200, 200);
+      if(state.angle < 45000 || ms > 3000)
+        phase = PHASE_FORWARD;
+      break;
+    case PHASE_FORWARD:
+      update_motors();
+      
+      state.drive_speed_left = -5;
+      if(ms%6000 < 5200)
+      {
+        state.drive_speed_right = -5;
+      }
+      else
+      {
+        state.drive_speed_right = 5;
+      }
+      
+      break;
+  }
 
   delay(10);
   input();

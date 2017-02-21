@@ -16,6 +16,8 @@ class State
   int32_t distance_right;
   int16_t speed_right;
   int16_t last_counts_right;
+  int16_t drive_speed_left;
+  int16_t drive_speed_right;
 
   enum general_state_t { BALANCING, ON_BOTTOM, ON_TOP, UNSTABLE }; 
   general_state_t general_state;
