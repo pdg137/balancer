@@ -53,7 +53,7 @@ void loop()
   static uint8_t count = 0;
   if(count == 10)
   {
-    snprintf(report, sizeof(report), "%d %d", readBatteryMillivolts(), speed);
+    snprintf(report, sizeof(report), "%d", ((int32_t)readBatteryMillivolts()*speed/400));
     Serial.println(report);
     count = 0;    
   }
