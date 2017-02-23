@@ -2,7 +2,7 @@
 
 // w: deg/s * 10^-1
 // angle: degrees * 10^-4
-void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_z,
+void State::integrate(int16_t w, int16_t a_x, int16_t a_z,
   int16_t counts_left, int16_t counts_right)
 {
   speed_left = (counts_left - last_counts_left);
@@ -12,13 +12,6 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
   speed_right = (counts_right - last_counts_right);
   distance_right += counts_right - last_counts_right - drive_speed_right;
   last_counts_right = counts_right;
-
-  if(!last_millis_set)
-  {
-    last_millis = current_millis;
-    last_millis_set = true;
-    return;
-  }
 
   // check what its general state is
   if(a_x > 0)
@@ -43,11 +36,8 @@ void State::integrate(int16_t current_millis, int16_t w, int16_t a_x, int16_t a_
     general_state = UNSTABLE;
   }
 
-  uint8_t dt = current_millis - last_millis;
-  last_millis += dt;
-
   angle_rate = w;
-  angle += angle_rate * dt;
+  angle += angle_rate * 10; // 100 Hz update rate
 
   switch(general_state)
   {

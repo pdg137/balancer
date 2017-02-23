@@ -95,8 +95,8 @@ void update_motors()
 
   speed += diff / 100;
 
-  speed += state.distance_left/200 + state.distance_right/200;
-  speed += state.speed_left/8 + state.speed_right/8;
+  speed += limit(state.distance_left/200 + state.distance_right/200, 10);
+  speed += state.speed_left/4 + state.speed_right/4;
 
   int16_t distance_diff = state.distance_left - state.distance_right;
   int16_t speed_left = limit(speed - distance_diff/10, 150);
@@ -146,7 +146,7 @@ void input()
 void integrate()
 {
   imu.read();
-  state.integrate(millis(), imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft(),  encoders.getCountsRight());
+  state.integrate(imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft(),  encoders.getCountsRight());
 }
 
 void do_tests()
@@ -199,10 +199,18 @@ phase_t phase = PHASE_WAIT;
 
 void loop()
 {
+  static uint16_t last_ms;
+  uint16_t ms = millis();
+
+  input();
+
+  // lock our balancing updates to 100 Hz
+  if(ms - last_ms < 10) return;
+  last_ms = ms;
+  
   integrate();
   if(testing) do_tests();
 
-  uint16_t ms = millis();
 
   switch(phase)
   {
@@ -223,7 +231,7 @@ void loop()
       break;
     case PHASE_FORWARD:
       update_motors();
-      
+      /*
       state.drive_speed_left = -5;
       if(ms%6000 < 5200)
       {
@@ -233,10 +241,7 @@ void loop()
       {
         state.drive_speed_right = 5;
       }
-      
+      */
       break;
   }
-
-  delay(10);
-  input();
 }
