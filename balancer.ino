@@ -45,11 +45,11 @@ void loop()
   int16_t p = new_counts - 1;
   int16_t d = p - last_p;
   last_p = p;
-  static uint16_t i;
+  static int16_t i;
   
-  i = limit(i+p, 150);
+  i = limit(i+p, 1500);
 
-  int16_t speed = limit(-p*10 - i, 150);
+  int16_t speed = limit(-p*10 - i/10, 150);
   static uint8_t count = 0;
   if(count == 10)
   {
