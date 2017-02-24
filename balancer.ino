@@ -77,6 +77,8 @@ void update_motors()
     ledYellow(0);
     ledGreen(0);
     speed = 0;
+    state.distance_left = 0;
+    state.distance_right = 0;
     set_motors(0, 0);
     return;
   }
@@ -94,16 +96,13 @@ void update_motors()
     ledGreen(1);
 
   speed += diff / 400;
-  speed += state.speed_left/8 + state.speed_right/8;
-
+  //speed += (((int32_t)state.distance_left) + state.distance_right)/400;
   speed = limit(speed, 150);
-/*
-  speed += limit(state.distance_left/200 + state.distance_right/200, 10);
-  speed += state.speed_left/4 + state.speed_right/4;
 
-  int16_t distance_diff = state.distance_left - state.distance_right;*/
-  int16_t speed_left = limit(speed , 150);
-  int16_t speed_right = limit(speed , 150);
+  int16_t speed2 = speed ;
+  speed2 += (state.speed_left + state.speed_right)/4;
+  int16_t speed_left = limit(speed2, 150);
+  int16_t speed_right = limit(speed2, 150);
   
   set_motors(speed_left, speed_right);
 }
@@ -197,9 +196,9 @@ void setup()
   imu.init();
 }
 
-enum phase_t { PHASE_WAIT, PHASE_FAST, PHASE_BACK, PHASE_FORWARD, PHASE_LEFT };
+enum phase_t { PHASE_WAIT, PHASE_BACK, PHASE_JUMP, PHASE_FORWARD, PHASE_LEFT };
 
-phase_t phase = PHASE_FORWARD;
+phase_t phase = PHASE_WAIT;
 
 void loop()
 {
@@ -219,18 +218,25 @@ void loop()
   switch(phase)
   {
     case PHASE_WAIT:
+      ledRed(1);
       set_motors(0,0);
-      if(ms > 1000 && !imu.calibrated) calibrate();
-      if(ms > 2000) phase = PHASE_FAST;
-      break;
-    case PHASE_FAST:
-      set_motors(-200, -200);
-      if(state.speed_left > 10 || ms > 2500)
-        phase = PHASE_BACK;
+      if(ms > 1000 && !imu.calibrated)
+      {
+        calibrate();
+      }
+      if(ms > 2000)
+      {
+        phase = PHASE_FORWARD;
+      }
       break;
     case PHASE_BACK:
-      set_motors(200, 200);
-      if(state.angle < 45000 || ms > 3000)
+      set_motors(-150, -150);
+      if(ms > 2300)
+        phase = PHASE_JUMP;
+      break;
+    case PHASE_JUMP:
+      set_motors(150, 150);
+      if(state.angle < 60000 || ms > 2600)
         phase = PHASE_FORWARD;
       break;
     case PHASE_FORWARD:
