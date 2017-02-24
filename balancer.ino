@@ -42,14 +42,14 @@ void start_stop_tests()
 void set_motors(int16_t left, int16_t right)
 {
   if(left > 0)
-    left += 30;
+    left += 20;
   if(left < 0)
-    left -= 30;
+    left -= 20;
 
   if(right > 0)
-    right += 50;
-  if(right < 0);
-    right -= 50;
+    right += 35;
+  if(right < 0)
+    right -= 35;
   motors.setSpeeds(-left, -right);
 }
 
@@ -68,6 +68,7 @@ void start_stop_motors()
   run_motors = !run_motors;
 }
 
+int16_t speed;
 void update_motors()
 {
   if(!run_motors || state.general_state != State::BALANCING)
@@ -75,6 +76,7 @@ void update_motors()
     ledRed(0);
     ledYellow(0);
     ledGreen(0);
+    speed = 0;
     set_motors(0, 0);
     return;
   }
@@ -91,16 +93,17 @@ void update_motors()
   else
     ledGreen(1);
 
-  static int16_t speed;
+  speed += diff / 400;
+  speed += state.speed_left/8 + state.speed_right/8;
 
-  speed += diff / 100;
-
+  speed = limit(speed, 150);
+/*
   speed += limit(state.distance_left/200 + state.distance_right/200, 10);
   speed += state.speed_left/4 + state.speed_right/4;
 
-  int16_t distance_diff = state.distance_left - state.distance_right;
-  int16_t speed_left = limit(speed - distance_diff/10, 150);
-  int16_t speed_right = limit(speed + distance_diff/10, 150);
+  int16_t distance_diff = state.distance_left - state.distance_right;*/
+  int16_t speed_left = limit(speed , 150);
+  int16_t speed_right = limit(speed , 150);
   
   set_motors(speed_left, speed_right);
 }
@@ -177,12 +180,13 @@ void do_tests()
     case State::UNSTABLE:  general_state = '*'; break;
     }
 
-    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d %d",
+    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d %d speed: %d",
       general_state,
       negative ? '-' : '+', angle_int, angle_frac,
       (int16_t)state.angle_rate,
       (int16_t)state.distance_left,
-      state.speed_left);
+      state.speed_left,
+      speed);
     Serial.println(report);
     cycle = 0;
   }
@@ -195,7 +199,7 @@ void setup()
 
 enum phase_t { PHASE_WAIT, PHASE_FAST, PHASE_BACK, PHASE_FORWARD, PHASE_LEFT };
 
-phase_t phase = PHASE_WAIT;
+phase_t phase = PHASE_FORWARD;
 
 void loop()
 {
