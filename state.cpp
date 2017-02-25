@@ -28,8 +28,6 @@ void State::integrate(int16_t w, int16_t a_x, int16_t a_z,
     {
       general_state = ON_TOP;
     }
-    distance_left = 0;
-    distance_right = 0;
   }
   else
   {

@@ -12,6 +12,8 @@ IMU imu;
 State state;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
+int16_t target;
+int16_t motor_speed;
 
 void print(char *string)
 {
@@ -32,7 +34,7 @@ void help()
   print("m) Start/stop motors");
 }
 
-bool testing = 0;
+bool testing = 1;
 void start_stop_tests()
 {
   testing = !testing;
@@ -41,15 +43,6 @@ void start_stop_tests()
 
 void set_motors(int16_t left, int16_t right)
 {
-  if(left > 0)
-    left += 20;
-  if(left < 0)
-    left -= 20;
-
-  if(right > 0)
-    right += 35;
-  if(right < 0)
-    right -= 35;
   motors.setSpeeds(-left, -right);
 }
 
@@ -73,7 +66,6 @@ void update_motors()
 {
   if(!run_motors || state.general_state != State::BALANCING)
   {
-    ledRed(0);
     ledYellow(0);
     ledGreen(0);
     speed = 0;
@@ -83,13 +75,12 @@ void update_motors()
     return;
   }
 
-  ledRed(0);
   ledYellow(0);
   ledGreen(0);
 
   int32_t diff = state.angle_rate + state.angle/200;
   if(diff < 0 && state.angle > 0)
-    ledRed(1);
+    ledYellow(1);
   else if(diff > 0 && state.angle < 0)
     ledYellow(1);
   else
@@ -156,8 +147,9 @@ void do_tests()
   static uint8_t cycle = 0;
 
   cycle += 1;
-  if(cycle == 10)
+  if(cycle == 1)
   {
+/*    
     int32_t angle = state.angle; // *10^4
     bool negative = false;
 
@@ -179,6 +171,7 @@ void do_tests()
     case State::UNSTABLE:  general_state = '*'; break;
     }
 
+
     snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d %d speed: %d",
       general_state,
       negative ? '-' : '+', angle_int, angle_frac,
@@ -186,6 +179,8 @@ void do_tests()
       (int16_t)state.distance_left,
       state.speed_left,
       speed);
+      */
+    snprintf(report, sizeof(report), "%d %d %d", state.speed_left, target, motor_speed/5); // ((int16_t)state.distance_left)%8192
     Serial.println(report);
     cycle = 0;
   }
@@ -209,16 +204,34 @@ void loop()
 
   // lock our balancing updates to 100 Hz
   if(ms - last_ms < 10) return;
+  ledRed(ms - last_ms > 11);
   last_ms = ms;
-  
+
   integrate();
   if(testing) do_tests();
 
+  // speed 100 is ~20 ticks/update
+  static int32_t count;
+
+  target = count/50-10;
+  int16_t p = state.speed_left - target;
+  static int16_t i;
+  static int16_t last_p;
+  int16_t d = p - last_p;
+  last_p = p;
+  i = limit(i+p, 25);
+  motor_speed = -7*p - 5*d - 2*i;
+  
+  set_motors(motor_speed,0);
+  count ++;
+  if(count == 1000)
+    count = 0;
+  return;
 
   switch(phase)
   {
     case PHASE_WAIT:
-      ledRed(1);
+      ledYellow(1);
       set_motors(0,0);
       if(ms > 1000 && !imu.calibrated)
       {
