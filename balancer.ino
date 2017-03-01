@@ -15,6 +15,7 @@ int32_t g_y_zero;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
 Romi32U4Buzzer buzzer;
+Romi32U4ButtonA buttonA;
 
 int32_t angle; // millidegrees
 int16_t angle_rate; // degrees/s
@@ -180,6 +181,7 @@ void drive_around()
 void loop()
 {
   static uint16_t last_ms;
+  static uint8_t lying_down_count = 0;
   uint16_t ms = millis();
 
   // lock our balancing updates to 100 Hz
@@ -195,7 +197,29 @@ void loop()
  
   if(imu.a.x < 0)
   {
-    lying_down();
+    if(buttonA.getSingleDebouncedPress())
+    {
+      motors.setSpeeds(0,0);
+      buzzer.play("!frfr");
+      while(buzzer.isPlaying());
+      buzzer.play(">c2");
+      motors.setSpeeds(-400,-400);
+      delay(400);
+      motors.setSpeeds(200,200);
+      for(uint8_t i=0;i<20;i++)
+      {
+        delay(10);
+        imu.read();
+        integrate_gyro();
+      }
+      motor_speed = 0;
+      distance_left = 0;
+      distance_right = 0;
+     }
+    else
+    {
+      lying_down();
+    }
   }
   else
   {
