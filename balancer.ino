@@ -138,10 +138,10 @@ void setup()
 const char song[] PROGMEM =
   "!O6 T240"
   "l32ab-b>cl8r br b-bb-a a-r gr g-4 g4"
-  "l32g-ga-l8r gr g-gg-f er e-r d4 e-4"
-  "gr msd8d8ml d-4dr"
-  "gr msd8d8ml d-4dr"
-  "cd-de-efg-g a-r gr g-4 gr";
+  "a-r gr g-gg-f er e-r d4 e-4"
+  "gr msd8d8ml d-4d4"
+  "l32efg-gl8r msd8d8ml d-4d4"
+  "cd-de-efg-g l32fg-ga-l8r gr g-4 gr";
 
 void drive_around()
 {
