@@ -19,20 +19,6 @@ int16_t speed_left;
 int32_t distance_right;
 int16_t speed_right;
 
-void set_motors(int16_t left, int16_t right)
-{
-  if(left > 0)
-    left += 20;
-  if(left < 0)
-    left -= 20;
-
-  if(right > 0)
-    right += 35;
-  if(right < 0)
-    right -= 35;
-  motors.setSpeeds(-left, -right);
-}
-
 int16_t limit(int16_t speed, int16_t l)
 {
   if(speed > l)
@@ -53,16 +39,15 @@ void balance()
   else
     ledGreen(1);
 
-  speed += diff / 200;
-  speed += (distance_left + distance_right)/800;
+  speed += diff / 150;
   speed += (speed_left + speed_right)/4;
-  speed = limit(speed, 150);
+  speed = limit(speed, 200);
 
   int16_t distance_diff = distance_left - distance_right;
-  int16_t speed_left = limit(speed - distance_diff/30, 150);
-  int16_t speed_right = limit(speed + distance_diff/30, 150);
+  int16_t speed_left = limit(speed - distance_diff/5, 200);
+  int16_t speed_right = limit(speed + distance_diff/5, 200);
   
-  set_motors(speed_left, speed_right);
+  motors.setSpeeds(speed_left, speed_right);
 }
 
 void integrate()
@@ -112,6 +97,10 @@ void setup()
   }
 
   g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
+
+  // my motors are reverse
+  motors.flipLeftMotor(true);
+  motors.flipRightMotor(true);
   
   ledRed(0);
 }
@@ -136,7 +125,7 @@ void loop()
     speed = 0;
     distance_left = 0;
     distance_right = 0;
-    set_motors(0, 0);
+    motors.setSpeeds(0, 0);
     if(angle_rate > -10 && angle_rate < 10)
     {
       if(imu.a.z > 0)
