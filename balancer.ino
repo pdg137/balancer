@@ -34,8 +34,8 @@ void balance()
 
   motor_speed +=
     diff / 15
-    + (distance_left + distance_right)/800
-    + (speed_left + speed_right)/4;
+    + (distance_left + distance_right)/200
+    + (speed_left + speed_right)*35/100;
   
   if(motor_speed > MOTOR_SPEED_LIMIT)
   {
@@ -47,7 +47,7 @@ void balance()
   }
 
   int16_t distance_diff = distance_left - distance_right;
-  motors.setSpeeds(motor_speed - distance_diff/5, motor_speed + distance_diff/5);
+  motors.setSpeeds(motor_speed - distance_diff/2, motor_speed + distance_diff/2);
 }
 
 void lying_down()
