@@ -73,7 +73,6 @@ void update_motors()
 {
   if(!run_motors || state.general_state != State::BALANCING)
   {
-    ledRed(0);
     ledYellow(0);
     ledGreen(0);
     speed = 0;
@@ -83,26 +82,23 @@ void update_motors()
     return;
   }
 
-  ledRed(0);
   ledYellow(0);
   ledGreen(0);
 
   int32_t diff = state.angle_rate + state.angle/200;
-  if(diff < 0 && state.angle > 0)
-    ledRed(1);
-  else if(diff > 0 && state.angle < 0)
+  if(diff < 0 && state.angle > 0 || diff > 0 && state.angle < 0)
     ledYellow(1);
   else
     ledGreen(1);
 
-  speed += diff / 400;
-  //speed += (((int32_t)state.distance_left) + state.distance_right)/400;
+  speed += diff / 200;
+  speed += (((int32_t)state.distance_left) + state.distance_right)/800;
+  speed += (state.speed_left + state.speed_right)/4;
   speed = limit(speed, 150);
 
-  int16_t speed2 = speed ;
-  speed2 += (state.speed_left + state.speed_right)/4;
-  int16_t speed_left = limit(speed2, 150);
-  int16_t speed_right = limit(speed2, 150);
+  int16_t distance_diff = state.distance_left - state.distance_right;
+  int16_t speed_left = limit(speed - distance_diff/30, 150);
+  int16_t speed_right = limit(speed + distance_diff/30, 150);
   
   set_motors(speed_left, speed_right);
 }
@@ -209,6 +205,7 @@ void loop()
 
   // lock our balancing updates to 100 Hz
   if(ms - last_ms < 10) return;
+  ledRed(ms - last_ms > 11);
   last_ms = ms;
   
   integrate();
