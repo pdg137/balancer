@@ -41,7 +41,10 @@ void balance()
   else
     ledGreen(1);
 
-  motor_speed += diff / 150 + (speed_left + speed_right)/4;
+  motor_speed +=
+    diff / 150
+    + (distance_left + distance_right)/800
+    + (speed_left + speed_right)/4;
   motor_speed = limit(motor_speed, MOTOR_SPEED_LIMIT);
 
   int16_t distance_diff = distance_left - distance_right;
