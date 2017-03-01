@@ -13,8 +13,8 @@ int32_t g_y_zero;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
 
-int32_t angle; // degrees * 10^-4
-int32_t angle_rate; // degrees/s * 10-1
+int32_t angle; // millidegrees
+int32_t angle_rate; // degrees/s
 int32_t distance_left;
 int16_t speed_left;
 int32_t distance_right;
@@ -42,7 +42,7 @@ void balance()
     ledGreen(1);
 
   motor_speed +=
-    diff / 150
+    diff / 15
     + (distance_left + distance_right)/800
     + (speed_left + speed_right)/4;
   motor_speed = limit(motor_speed, MOTOR_SPEED_LIMIT);
@@ -59,16 +59,16 @@ void lying_down()
   distance_right = 0;
   motors.setSpeeds(0, 0);
 
-  if(angle_rate > -10 && angle_rate < 10)
+  if(angle_rate > -2 && angle_rate < 2)
   {
     // it's really calm, so we know the angles
     if(imu.a.z > 0)
     {
-      angle = 1100000;
+      angle = 110000;
     }
     else
     {
-      angle = -1090000;
+      angle = -109000;
     }
     distance_left = 0;
     distance_right = 0;
@@ -79,7 +79,7 @@ void integrate()
 {
   imu.read();
 
-  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/2857; // convert from full-scale 1000 deg/s to deg/s*10^-1
+  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/28570; // convert from full-scale 1000 deg/s to deg/s
   angle += angle_rate * 10; // 100 Hz update rate
 
   static int16_t last_counts_left;
