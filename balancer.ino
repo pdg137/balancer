@@ -164,8 +164,6 @@ void drive_around()
 
 void loop()
 {
-  motors.setSpeeds(50,50);
-  return;
   static uint16_t last_ms;
   uint16_t ms = millis();
 
