@@ -19,9 +19,6 @@ int16_t speed_left;
 int32_t distance_right;
 int16_t speed_right;
 
-enum general_state_t { BALANCING, ON_BOTTOM, ON_TOP, UNSTABLE }; 
-general_state_t general_state;
-
 void set_motors(int16_t left, int16_t right)
 {
   if(left > 0)
@@ -45,19 +42,10 @@ int16_t limit(int16_t speed, int16_t l)
   return speed;
 }
 int16_t speed;
-void update_motors()
+void balance()
 {
-  ledYellow(0);
-  ledGreen(0);
-
-  if(general_state != BALANCING)
-  {
-    speed = 0;
-    distance_left = 0;
-    distance_right = 0;
-    set_motors(0, 0);
-    return;
-  }
+  // drift toward w=0 with timescale ~10s
+  angle = angle*999/1000;
 
   int32_t diff = angle_rate + angle/200;
   if(diff < 0 && angle > 0 || diff > 0 && angle < 0)
@@ -82,6 +70,7 @@ void integrate()
   imu.read();
 
   angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/2857; // convert from full-scale 1000 deg/s to deg/s*10^-1
+  angle += angle_rate * 10; // 100 Hz update rate
 
   static int16_t last_counts_left;
   int16_t counts_left = encoders.getCountsLeft();
@@ -95,44 +84,6 @@ void integrate()
   distance_right += counts_right - last_counts_right;
   last_counts_right = counts_right;
 
-  // check what its general state is
-  if(imu.a.x > 0)
-  {
-    general_state = BALANCING;
-  }
-  else if(angle_rate > -10 && angle_rate < 10)
-  {
-    if(imu.a.z > 0)
-    {
-      general_state = ON_BOTTOM;
-    }
-    else
-    {
-      general_state = ON_TOP;
-    }
-    distance_left = 0;
-    distance_right = 0;
-  }
-  else
-  {
-    general_state = UNSTABLE;
-  }
-
-  angle += angle_rate * 10; // 100 Hz update rate
-
-  switch(general_state)
-  {
-  case BALANCING:
-    // drift toward w=0 with timescale ~10s
-    angle = angle*999/1000;
-    break;
-  case ON_TOP:
-    angle = -1090000;
-    break;
-  case ON_BOTTOM:
-    angle = 1100000;
-    break;
-  }
 }
 
 void setup()
@@ -173,8 +124,35 @@ void loop()
   // lock our balancing updates to 100 Hz
   if(ms - last_ms < 10) return;
   ledRed(ms - last_ms > 11);
+  ledYellow(0);
+  ledGreen(0);
   last_ms = ms;
   
   integrate();
-  update_motors();
+ 
+  if(imu.a.x < 0)
+  {
+    // it's lying down
+    speed = 0;
+    distance_left = 0;
+    distance_right = 0;
+    set_motors(0, 0);
+    if(angle_rate > -10 && angle_rate < 10)
+    {
+      if(imu.a.z > 0)
+      {
+        angle = 1100000;
+      }
+      else
+      {
+        angle = -1090000;
+      }
+      distance_left = 0;
+      distance_right = 0;
+    }
+  }
+  else
+  {
+    balance();
+  }
 }
