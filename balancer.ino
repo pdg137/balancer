@@ -6,6 +6,7 @@
 #include <LSM6.h>
 
 const int16_t CALIBRATION_ITERATIONS=100;
+const int16_t MOTOR_SPEED_LIMIT=400;
 
 LSM6 imu;
 int32_t g_y_zero;
@@ -18,6 +19,7 @@ int32_t distance_left;
 int16_t speed_left;
 int32_t distance_right;
 int16_t speed_right;
+int16_t motor_speed;
 
 int16_t limit(int16_t speed, int16_t l)
 {
@@ -27,7 +29,7 @@ int16_t limit(int16_t speed, int16_t l)
     speed = -l;
   return speed;
 }
-int16_t speed;
+
 void balance()
 {
   // drift toward w=0 with timescale ~10s
@@ -39,15 +41,35 @@ void balance()
   else
     ledGreen(1);
 
-  speed += diff / 150;
-  speed += (speed_left + speed_right)/4;
-  speed = limit(speed, 200);
+  motor_speed += diff / 150 + (speed_left + speed_right)/4;
+  motor_speed = limit(motor_speed, MOTOR_SPEED_LIMIT);
 
   int16_t distance_diff = distance_left - distance_right;
-  int16_t speed_left = limit(speed - distance_diff/5, 200);
-  int16_t speed_right = limit(speed + distance_diff/5, 200);
-  
-  motors.setSpeeds(speed_left, speed_right);
+  motors.setSpeeds(motor_speed - distance_diff/5, motor_speed + distance_diff/5);
+}
+
+void lying_down()
+{
+  // reset things so it doesn't go crazy
+  motor_speed = 0;
+  distance_left = 0;
+  distance_right = 0;
+  motors.setSpeeds(0, 0);
+
+  if(angle_rate > -10 && angle_rate < 10)
+  {
+    // it's really calm, so we know the angles
+    if(imu.a.z > 0)
+    {
+      angle = 1100000;
+    }
+    else
+    {
+      angle = -1090000;
+    }
+    distance_left = 0;
+    distance_right = 0;
+  }
 }
 
 void integrate()
@@ -121,24 +143,7 @@ void loop()
  
   if(imu.a.x < 0)
   {
-    // it's lying down
-    speed = 0;
-    distance_left = 0;
-    distance_right = 0;
-    motors.setSpeeds(0, 0);
-    if(angle_rate > -10 && angle_rate < 10)
-    {
-      if(imu.a.z > 0)
-      {
-        angle = 1100000;
-      }
-      else
-      {
-        angle = -1090000;
-      }
-      distance_left = 0;
-      distance_right = 0;
-    }
+    lying_down();
   }
   else
   {
