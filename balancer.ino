@@ -5,8 +5,9 @@
 #include <Wire.h>
 #include <LSM6.h>
 
-const int16_t CALIBRATION_ITERATIONS=100;
-const int16_t MOTOR_SPEED_LIMIT=400;
+const uint8_t CALIBRATION_ITERATIONS=100;
+const uint16_t MOTOR_SPEED_LIMIT=200;
+const uint8_t UPDATE_TIME_MS=10;
 
 LSM6 imu;
 int32_t g_y_zero;
@@ -80,7 +81,7 @@ void integrate()
   imu.read();
 
   angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/28570; // convert from full-scale 1000 deg/s to deg/s
-  angle += angle_rate * 10; // 100 Hz update rate
+  angle += angle_rate * UPDATE_TIME_MS;
 
   static int16_t last_counts_left;
   int16_t counts_left = encoders.getCountsLeft();
@@ -123,7 +124,7 @@ void setup()
 
   g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
 
-  // my motors are reverse
+  // my motors are reversed
   motors.flipLeftMotor(true);
   motors.flipRightMotor(true);
   
@@ -136,8 +137,8 @@ void loop()
   uint16_t ms = millis();
 
   // lock our balancing updates to 100 Hz
-  if(ms - last_ms < 10) return;
-  ledRed(ms - last_ms > 11);
+  if(ms - last_ms < UPDATE_TIME_MS) return;
+  ledRed(ms - last_ms > UPDATE_TIME_MS+1);
   ledYellow(0);
   ledGreen(0);
   last_ms = ms;
