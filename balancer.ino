@@ -1,5 +1,4 @@
-// This example shows how to blink the three user LEDs on the
-// Romi 32U4.
+// Balancing robot example using the Romi 32U4 library.
 
 #include <Romi32U4.h>
 #include <Wire.h>
@@ -15,7 +14,7 @@ Romi32U4Motors motors;
 Romi32U4Encoders encoders;
 
 int32_t angle; // millidegrees
-int32_t angle_rate; // degrees/s
+int16_t angle_rate; // degrees/s
 int32_t distance_left;
 int16_t speed_left;
 int32_t distance_right;
@@ -79,7 +78,7 @@ void integrate()
 {
   imu.read();
 
-  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/28570; // convert from full-scale 1000 deg/s to deg/s
+  angle_rate = (imu.g.y - g_y_zero)/29; // convert from full-scale 1000 deg/s to deg/s
   angle += angle_rate * UPDATE_TIME_MS;
 
   static int16_t last_counts_left;
@@ -121,7 +120,7 @@ void setup()
     delay(1);
   }
 
-  g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
+  g_y_zero = g_y_total / CALIBRATION_ITERATIONS;
 
   // my motors are reversed
   motors.flipLeftMotor(true);
