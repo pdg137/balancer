@@ -1,17 +1,20 @@
 // Balancing robot example using the Romi 32U4 library.
+// This demo is tuned for the 50:1 gearmotor and 45:21 plastic gears;
+// you will need to adjust the parameters in balance() for your robot.
 
 #include <Romi32U4.h>
 #include <Wire.h>
 #include <LSM6.h>
 
 const uint8_t CALIBRATION_ITERATIONS=100;
-const int16_t MOTOR_SPEED_LIMIT=200;
+const int16_t MOTOR_SPEED_LIMIT=400;
 const uint8_t UPDATE_TIME_MS=10;
 
 LSM6 imu;
 int32_t g_y_zero;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
+Romi32U4Buzzer buzzer;
 
 int32_t angle; // millidegrees
 int16_t angle_rate; // degrees/s
@@ -33,9 +36,9 @@ void balance()
     ledGreen(1);
 
   motor_speed +=
-    diff / 15
-    + (distance_left + distance_right)/200
-    + (speed_left + speed_right)*35/100;
+    diff / 8
+    + (distance_left + distance_right)/150
+    + (speed_left + speed_right)*30/100;
   
   if(motor_speed > MOTOR_SPEED_LIMIT)
   {
@@ -59,6 +62,7 @@ void lying_down()
   distance_left = 0;
   distance_right = 0;
   motors.setSpeeds(0, 0);
+  buzzer.stopPlaying();
 
   if(angle_rate > -2 && angle_rate < 2)
   {
@@ -125,35 +129,46 @@ void setup()
   g_y_zero = g_y_total / CALIBRATION_ITERATIONS;
 
   // my motors are reversed
-  motors.flipLeftMotor(true);
-  motors.flipRightMotor(true);
+  //motors.flipLeftMotor(true);
+  //motors.flipRightMotor(true);
   
   ledRed(0);
 }
 
+const char song[] PROGMEM =
+  "!O6 T240"
+  "l32ab-b>cl8r br b-bb-a a-r gr g-4 g4"
+  "l32g-ga-l8r gr g-gg-f er e-r d4 e-4"
+  "gr msd8d8ml d-4dr"
+  "gr msd8d8ml d-4dr"
+  "cd-de-efg-g a-r gr g-4 gr";
+
 void drive_around()
 {
+  if(!buzzer.isPlaying())
+    buzzer.playFromProgramSpace(song);
+  
   uint16_t time = millis() % 8192;
   uint16_t drive_left, drive_right;
-  if(time < 2048)
+  if(time < 1900)
   {
-    drive_left = 10;
-    drive_right = 10;
+    drive_left = 20;
+    drive_right = 20;
   }
   else if(time < 4096)
   {
-    drive_left = 13;
-    drive_right = 7;
+    drive_left = 25;
+    drive_right = 15;
   }
-  else if(time < 4096+2048)
+  else if(time < 4096+1900)
   {
-    drive_right = 10;
-    drive_left = 10;
+    drive_right = 20;
+    drive_left = 20;
   }
   else
   {
-    drive_left = 7;
-    drive_right = 13;
+    drive_left = 15;
+    drive_right = 25;
   }
 
   distance_left += drive_left;
@@ -177,7 +192,6 @@ void loop()
   imu.read();
   integrate_gyro();
   integrate_encoders();
-  //drive_around();
  
   if(imu.a.x < 0)
   {
@@ -185,6 +199,9 @@ void loop()
   }
   else
   {
+    // Once you have it balancing well, uncomment this line to make
+    // it drive around and play a song.
+    // drive_around();
     balance();
   }
 }
