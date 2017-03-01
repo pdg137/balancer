@@ -10,6 +10,8 @@ const uint8_t CALIBRATION_ITERATIONS=100;
 const int16_t MOTOR_SPEED_LIMIT=400;
 const uint8_t UPDATE_TIME_MS=10;
 
+const int16_t GEAR_RATIO=111; // 50:1 motors with 45:21 plastic gears
+
 LSM6 imu;
 int32_t g_y_zero;
 Romi32U4Motors motors;
@@ -18,11 +20,11 @@ Romi32U4Buzzer buzzer;
 Romi32U4ButtonA buttonA;
 
 int32_t angle; // millidegrees
-int16_t angle_rate; // degrees/s
+int32_t angle_rate; // degrees/s
 int32_t distance_left;
-int16_t speed_left;
+int32_t speed_left;
 int32_t distance_right;
-int16_t speed_right;
+int32_t speed_right;
 int16_t motor_speed;
 
 void balance()
@@ -30,16 +32,17 @@ void balance()
   // drift toward w=0 with timescale ~10s
   angle = angle*999/1000;
 
-  int32_t diff = angle_rate + angle/200;
-  if(diff < 0 && angle > 0 || diff > 0 && angle < 0)
+  int32_t diff = angle_rate*200 + angle;
+  if(diff < -15000 || diff > 15000)
     ledYellow(1);
   else
     ledGreen(1);
 
-  motor_speed +=
-    diff / 8
-    + (distance_left + distance_right)/150
-    + (speed_left + speed_right)*30/100;
+  motor_speed += ( 
+    + 7 * diff
+    + 73 * (distance_left + distance_right)
+    + 3300 * (speed_left + speed_right)
+    ) / 100 / GEAR_RATIO;
   
   if(motor_speed > MOTOR_SPEED_LIMIT)
   {
@@ -74,7 +77,7 @@ void lying_down()
     }
     else
     {
-      angle = -109000;
+      angle = -110000;
     }
     distance_left = 0;
     distance_right = 0;
@@ -203,7 +206,7 @@ void loop()
       buzzer.play("!frfr");
       while(buzzer.isPlaying());
       buzzer.play(">c2");
-      motors.setSpeeds(-400,-400);
+      motors.setSpeeds(-MOTOR_SPEED_LIMIT,-MOTOR_SPEED_LIMIT);
       delay(400);
       motors.setSpeeds(200,200);
       for(uint8_t i=0;i<20;i++)
