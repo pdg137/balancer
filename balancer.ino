@@ -4,40 +4,15 @@
 #include <Romi32U4.h>
 #include <Wire.h>
 #include <LSM6.h>
-#include "imu.h"
 #include "state.h"
 
-char report[80];
-IMU imu;
+const int16_t CALIBRATION_ITERATIONS=100;
+
+LSM6 imu;
+int32_t g_y_zero;
 State state;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
-
-void print(char *string)
-{
-  Serial.println(string);
-}
-
-char read()
-{
-  return Serial.read();
-}
-
-void help()
-{
-  print("Balancer 0.0.3");
-  print("b) Check batteries");
-  print("c) Calibrate");
-  print("t) Start/stop tests");
-  print("m) Start/stop motors");
-}
-
-bool testing = 0;
-void start_stop_tests()
-{
-  testing = !testing;
-  state.reset();
-}
 
 void set_motors(int16_t left, int16_t right)
 {
@@ -61,17 +36,10 @@ int16_t limit(int16_t speed, int16_t l)
     speed = -l;
   return speed;
 }
-
-bool run_motors = true;
-void start_stop_motors()
-{
-  run_motors = !run_motors;
-}
-
 int16_t speed;
 void update_motors()
 {
-  if(!run_motors || state.general_state != State::BALANCING)
+  if(state.general_state != State::BALANCING)
   {
     ledYellow(0);
     ledGreen(0);
@@ -103,105 +71,49 @@ void update_motors()
   set_motors(speed_left, speed_right);
 }
 
-void calibrate()
-{
-  print("Calibrating...");
-  imu.calibrate();
-  snprintf(report, sizeof(report), "Gyro calibration: %6d", imu.g_y_zero);
-  print(report);
-}
-
-void input()
-{
-  char c = read();
-  if(c == -1)
-  {
-    return;
-  }
-
-  Serial.println(c);
-  switch(c)
-  {
-  case 'b':
-    snprintf(report, sizeof(report), "Battery voltage: %d mV", readBatteryMillivolts());
-    print(report);
-    break;
-  case 'c':
-    calibrate();
-    break;
-  case 't':
-    start_stop_tests();
-    break;
-  case 'm':
-    start_stop_motors();
-    break;
-  default:
-    help();
-  }
-  Serial.print("> ");
-}
-
 void integrate()
 {
   imu.read();
-  state.integrate(imu.w, imu.a_x, imu.a_z, encoders.getCountsLeft(),  encoders.getCountsRight());
-}
 
-void do_tests()
-{
-  static uint8_t cycle = 0;
-
-  cycle += 1;
-  if(cycle == 10)
-  {
-    int32_t angle = state.angle; // *10^4
-    bool negative = false;
-
-    if(angle < 0)
-    {
-      angle = -angle;
-      negative = true;
-    }
-
-    int16_t angle_int = angle/10000;
-    int16_t angle_frac = angle - angle_int*10000L;
-
-    char general_state;
-    switch(state.general_state)
-    {
-    case State::BALANCING: general_state = '|'; break;
-    case State::ON_TOP:    general_state = '/'; break;
-    case State::ON_BOTTOM: general_state = '\\'; break;
-    case State::UNSTABLE:  general_state = '*'; break;
-    }
-
-    snprintf(report, sizeof(report), "%c angle: %c%d.%04d rate: %d enc: %d %d speed: %d",
-      general_state,
-      negative ? '-' : '+', angle_int, angle_frac,
-      (int16_t)state.angle_rate,
-      (int16_t)state.distance_left,
-      state.speed_left,
-      speed);
-    Serial.println(report);
-    cycle = 0;
-  }
+  int16_t angle_rate; // deg/s*10^-1
+  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/2857; // convert from full-scale 1000 deg/s
+  state.integrate(angle_rate, imu.a.x, imu.a.z, encoders.getCountsLeft(),  encoders.getCountsRight());
 }
 
 void setup()
 {
-  imu.init();
+  // initialize IMU
+  Wire.begin();
+  if (!imu.init())
+  {
+    while(true) Serial.println("Failed to detect and initialize IMU!");
+  }
+  imu.enableDefault();
+  imu.writeReg(LSM6::CTRL2_G, 0b01011000); // 208 Hz, 1000 deg/s
+
+  // wait for IMU readings to stabilize
+  ledRed(1);
+  delay(1000);
+  
+  // calibrate the gyro
+  int i;
+  int32_t g_y_total=0;
+  for(i=0;i<CALIBRATION_ITERATIONS;i++)
+  {
+    imu.read();
+    g_y_total += imu.g.y;
+    delay(1);
+  }
+
+  g_y_zero = g_y_total * 1000 / CALIBRATION_ITERATIONS;
+  
+  ledRed(0);
 }
-
-enum phase_t { PHASE_WAIT, PHASE_BACK, PHASE_JUMP, PHASE_FORWARD, PHASE_LEFT };
-
-phase_t phase = PHASE_WAIT;
 
 void loop()
 {
   static uint16_t last_ms;
   uint16_t ms = millis();
-
-  input();
 
   // lock our balancing updates to 100 Hz
   if(ms - last_ms < 10) return;
@@ -209,46 +121,5 @@ void loop()
   last_ms = ms;
   
   integrate();
-  if(testing) do_tests();
-
-
-  switch(phase)
-  {
-    case PHASE_WAIT:
-      ledRed(1);
-      set_motors(0,0);
-      if(ms > 1000 && !imu.calibrated)
-      {
-        calibrate();
-      }
-      if(ms > 2000)
-      {
-        phase = PHASE_FORWARD;
-      }
-      break;
-    case PHASE_BACK:
-      set_motors(-150, -150);
-      if(ms > 2300)
-        phase = PHASE_JUMP;
-      break;
-    case PHASE_JUMP:
-      set_motors(150, 150);
-      if(state.angle < 60000 || ms > 2600)
-        phase = PHASE_FORWARD;
-      break;
-    case PHASE_FORWARD:
-      update_motors();
-      /*
-      state.drive_speed_left = -5;
-      if(ms%6000 < 5200)
-      {
-        state.drive_speed_right = -5;
-      }
-      else
-      {
-        state.drive_speed_right = 5;
-      }
-      */
-      break;
-  }
+  update_motors();
 }
