@@ -4,15 +4,23 @@
 #include <Romi32U4.h>
 #include <Wire.h>
 #include <LSM6.h>
-#include "state.h"
 
 const int16_t CALIBRATION_ITERATIONS=100;
 
 LSM6 imu;
 int32_t g_y_zero;
-State state;
 Romi32U4Motors motors;
 Romi32U4Encoders encoders;
+
+int32_t angle; // degrees * 10^-4
+int32_t angle_rate; // degrees/s * 10-1
+int32_t distance_left;
+int16_t speed_left;
+int32_t distance_right;
+int16_t speed_right;
+
+enum general_state_t { BALANCING, ON_BOTTOM, ON_TOP, UNSTABLE }; 
+general_state_t general_state;
 
 void set_motors(int16_t left, int16_t right)
 {
@@ -39,32 +47,30 @@ int16_t limit(int16_t speed, int16_t l)
 int16_t speed;
 void update_motors()
 {
-  if(state.general_state != State::BALANCING)
+  ledYellow(0);
+  ledGreen(0);
+
+  if(general_state != BALANCING)
   {
-    ledYellow(0);
-    ledGreen(0);
     speed = 0;
-    state.distance_left = 0;
-    state.distance_right = 0;
+    distance_left = 0;
+    distance_right = 0;
     set_motors(0, 0);
     return;
   }
 
-  ledYellow(0);
-  ledGreen(0);
-
-  int32_t diff = state.angle_rate + state.angle/200;
-  if(diff < 0 && state.angle > 0 || diff > 0 && state.angle < 0)
+  int32_t diff = angle_rate + angle/200;
+  if(diff < 0 && angle > 0 || diff > 0 && angle < 0)
     ledYellow(1);
   else
     ledGreen(1);
 
   speed += diff / 200;
-  speed += (((int32_t)state.distance_left) + state.distance_right)/800;
-  speed += (state.speed_left + state.speed_right)/4;
+  speed += (distance_left + distance_right)/800;
+  speed += (speed_left + speed_right)/4;
   speed = limit(speed, 150);
 
-  int16_t distance_diff = state.distance_left - state.distance_right;
+  int16_t distance_diff = distance_left - distance_right;
   int16_t speed_left = limit(speed - distance_diff/30, 150);
   int16_t speed_right = limit(speed + distance_diff/30, 150);
   
@@ -75,9 +81,58 @@ void integrate()
 {
   imu.read();
 
-  int16_t angle_rate; // deg/s*10^-1
-  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/2857; // convert from full-scale 1000 deg/s
-  state.integrate(angle_rate, imu.a.x, imu.a.z, encoders.getCountsLeft(),  encoders.getCountsRight());
+  angle_rate = (((int32_t)imu.g.y)*1000 - g_y_zero)/2857; // convert from full-scale 1000 deg/s to deg/s*10^-1
+
+  static int16_t last_counts_left;
+  int16_t counts_left = encoders.getCountsLeft();
+  speed_left = (counts_left - last_counts_left);
+  distance_left += counts_left - last_counts_left;
+  last_counts_left = counts_left;
+
+  static int16_t last_counts_right;
+  int16_t counts_right = encoders.getCountsRight();
+  speed_right = (counts_right - last_counts_right);
+  distance_right += counts_right - last_counts_right;
+  last_counts_right = counts_right;
+
+  // check what its general state is
+  if(imu.a.x > 0)
+  {
+    general_state = BALANCING;
+  }
+  else if(angle_rate > -10 && angle_rate < 10)
+  {
+    if(imu.a.z > 0)
+    {
+      general_state = ON_BOTTOM;
+    }
+    else
+    {
+      general_state = ON_TOP;
+    }
+    distance_left = 0;
+    distance_right = 0;
+  }
+  else
+  {
+    general_state = UNSTABLE;
+  }
+
+  angle += angle_rate * 10; // 100 Hz update rate
+
+  switch(general_state)
+  {
+  case BALANCING:
+    // drift toward w=0 with timescale ~10s
+    angle = angle*999/1000;
+    break;
+  case ON_TOP:
+    angle = -1090000;
+    break;
+  case ON_BOTTOM:
+    angle = 1100000;
+    break;
+  }
 }
 
 void setup()
