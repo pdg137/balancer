@@ -47,7 +47,9 @@ void balance()
   }
 
   int16_t distance_diff = distance_left - distance_right;
-  motors.setSpeeds(motor_speed - distance_diff/2, motor_speed + distance_diff/2);
+
+  motors.setSpeeds(motor_speed - distance_diff/2,
+    motor_speed + distance_diff/2);
 }
 
 void lying_down()
@@ -74,13 +76,14 @@ void lying_down()
   }
 }
 
-void integrate()
+void integrate_gyro()
 {
-  imu.read();
-
   angle_rate = (imu.g.y - g_y_zero)/29; // convert from full-scale 1000 deg/s to deg/s
   angle += angle_rate * UPDATE_TIME_MS;
+}
 
+void integrate_encoders()
+{
   static int16_t last_counts_left;
   int16_t counts_left = encoders.getCountsLeft();
   speed_left = (counts_left - last_counts_left);
@@ -92,7 +95,6 @@ void integrate()
   speed_right = (counts_right - last_counts_right);
   distance_right += counts_right - last_counts_right;
   last_counts_right = counts_right;
-
 }
 
 void setup()
@@ -129,8 +131,41 @@ void setup()
   ledRed(0);
 }
 
+void drive_around()
+{
+  uint16_t time = millis() % 8192;
+  uint16_t drive_left, drive_right;
+  if(time < 2048)
+  {
+    drive_left = 10;
+    drive_right = 10;
+  }
+  else if(time < 4096)
+  {
+    drive_left = 13;
+    drive_right = 7;
+  }
+  else if(time < 4096+2048)
+  {
+    drive_right = 10;
+    drive_left = 10;
+  }
+  else
+  {
+    drive_left = 7;
+    drive_right = 13;
+  }
+
+  distance_left += drive_left;
+  distance_right += drive_right;
+  speed_left += drive_left;
+  speed_right += drive_right;
+}
+
 void loop()
 {
+  motors.setSpeeds(50,50);
+  return;
   static uint16_t last_ms;
   uint16_t ms = millis();
 
@@ -140,8 +175,11 @@ void loop()
   ledYellow(0);
   ledGreen(0);
   last_ms = ms;
-  
-  integrate();
+
+  imu.read();
+  integrate_gyro();
+  integrate_encoders();
+  //drive_around();
  
   if(imu.a.x < 0)
   {
