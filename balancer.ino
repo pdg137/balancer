@@ -6,7 +6,7 @@
 #include <LSM6.h>
 
 const uint8_t CALIBRATION_ITERATIONS=100;
-const uint16_t MOTOR_SPEED_LIMIT=200;
+const int16_t MOTOR_SPEED_LIMIT=200;
 const uint8_t UPDATE_TIME_MS=10;
 
 LSM6 imu;
@@ -21,15 +21,6 @@ int16_t speed_left;
 int32_t distance_right;
 int16_t speed_right;
 int16_t motor_speed;
-
-int16_t limit(int16_t speed, int16_t l)
-{
-  if(speed > l)
-    speed = l;
-  else if(speed < -l)
-    speed = -l;
-  return speed;
-}
 
 void balance()
 {
@@ -46,7 +37,15 @@ void balance()
     diff / 15
     + (distance_left + distance_right)/800
     + (speed_left + speed_right)/4;
-  motor_speed = limit(motor_speed, MOTOR_SPEED_LIMIT);
+  
+  if(motor_speed > MOTOR_SPEED_LIMIT)
+  {
+    motor_speed = MOTOR_SPEED_LIMIT;
+  }
+  if(motor_speed < -MOTOR_SPEED_LIMIT)
+  {
+    motor_speed = -MOTOR_SPEED_LIMIT;
+  }
 
   int16_t distance_diff = distance_left - distance_right;
   motors.setSpeeds(motor_speed - distance_diff/5, motor_speed + distance_diff/5);
