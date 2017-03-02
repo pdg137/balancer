@@ -16,7 +16,7 @@ void setup()
   // motors.flipLeftMotor(true);
   // motors.flipRightMotor(true);
 
-  balance_setup();
+  balanceSetup();
 }
 
 const char song[] PROGMEM =
@@ -27,7 +27,7 @@ const char song[] PROGMEM =
   "l32efg-gl8r msd8d8ml d-4d4"
   "cd-de-efg-g l32fg-ga-l8r gr g-4 gr";
 
-void drive_around()
+void driveAround()
 {
   if(!buzzer.isPlaying())
   {
@@ -35,34 +35,34 @@ void drive_around()
   }
 
   uint16_t time = millis() % 8192;
-  uint16_t drive_left, drive_right;
+  uint16_t driveLeft, driveRight;
   if(time < 1900)
   {
-    drive_left = 20;
-    drive_right = 20;
+    driveLeft = 20;
+    driveRight = 20;
   }
   else if(time < 4096)
   {
-    drive_left = 25;
-    drive_right = 15;
+    driveLeft = 25;
+    driveRight = 15;
   }
   else if(time < 4096+1900)
   {
-    drive_right = 20;
-    drive_left = 20;
+    driveLeft = 20;
+    driveRight = 20;
   }
   else
   {
-    drive_left = 15;
-    drive_right = 25;
+    driveLeft = 15;
+    driveRight = 25;
   }
 
-  balance_drive(drive_left, drive_right);
+  balanceDrive(driveLeft, driveRight);
 }
 
 void loop()
 {
-  if(!is_balancing())
+  if(!isBalancing())
   {
     buzzer.stopPlaying();
     if(buttonA.getSingleDebouncedPress())
@@ -77,13 +77,13 @@ void loop()
       for(uint8_t i=0;i<20;i++)
       {
         delay(UPDATE_TIME_MS);
-        balance_update_sensors();
+        balanceUpdateSensors();
         if(angle < 60000)
           break;
       }
-      balance_reset_encoders();
+      balanceResetEncoders();
     }
   }
 
-  balance_update();
+  balanceUpdate();
 }

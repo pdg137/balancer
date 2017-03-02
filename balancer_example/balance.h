@@ -67,27 +67,27 @@ extern Romi32U4Motors motors;
 
 // Call this function to adjust the robot's encoder measurements,
 // which will cause it to drive in the corresponding direction.
-void balance_drive(int16_t ticks_left, int16_t ticks_right);
+void balanceDrive(int16_t ticks_left, int16_t ticks_right);
 
 // Call this in your setup() to initialize and calibrate the IMU.
-void balance_setup();
+void balanceSetup();
 
 // Call this in loop() to run the full balancing algorithm.
-void balance_update();
+void balanceUpdate();
 
 // Returns true if (according to the balancing algorithm) the robot is
 // trying to balance.  When it falls down it shuts off the motors, and
 // this function will return false
-bool is_balancing();
+bool isBalancing();
 
 // Sometimes you will want to take control of the motors but keep
 // updating the balancing code's encoders and angle measurements so
 // you don't lose track of the robot's position and angle.  Call this
 // every 10ms (UPDATE_TIME_MS) to update the sensors, and you will be
 // able to resume balancing immediately when you are done.
-void balance_update_sensors();
+void balanceUpdateSensors();
 
 // Call this function to reset the encoders.  This is useful after a
 // large motion, so that robot does not try to make a huge correction
 // to get back to "zero".
-void balance_reset_encoders();
+void balanceResetEncoders();
