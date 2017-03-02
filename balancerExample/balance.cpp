@@ -16,10 +16,16 @@ int32_t distanceRight;
 int32_t speedRight;
 int16_t motorSpeed;
 bool isBalancingStatus;
+bool balanceUpdateDelayedStatus;
 
 bool isBalancing()
 {
   return isBalancingStatus;
+}
+
+bool balanceUpdateDelayed()
+{
+  return balanceUpdateDelayedStatus;
 }
 
 void balance()
@@ -28,10 +34,6 @@ void balance()
   angle = angle*999/1000;
 
   int32_t diff = angleRate*ANGLE_RATE_RATIO + angle;
-  if(diff < -15000 || diff > 15000)
-    ledYellow(1);
-  else
-    ledGreen(1);
 
   motorSpeed += (
     + ANGLE_RESPONSE * diff
@@ -119,7 +121,6 @@ void balanceSetup()
   imu.writeReg(LSM6::CTRL2_G, 0b01011000); // 208 Hz, 1000 deg/s
 
   // wait for IMU readings to stabilize
-  ledRed(1);
   delay(1000);
 
   // calibrate the gyro
@@ -133,8 +134,6 @@ void balanceSetup()
   }
 
   gYZero = total / CALIBRATION_ITERATIONS;
-
-  ledRed(0);
 }
 
 void balanceResetEncoders()
@@ -157,9 +156,7 @@ void balanceUpdate()
 
   // lock our balancing updates to 100 Hz
   if(ms - lastMillis < UPDATE_TIME_MS) return;
-  ledRed(ms - lastMillis > UPDATE_TIME_MS+1);
-  ledYellow(0);
-  ledGreen(0);
+  balanceUpdateDelayedStatus = ms - lastMillis > UPDATE_TIME_MS+1;
   lastMillis = ms;
 
   balanceUpdateSensors();

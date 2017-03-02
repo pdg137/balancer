@@ -13,10 +13,11 @@ const int16_t MOTOR_SPEED_LIMIT=400;
 // This constant relates the angle to its rate of change for a robot
 // that is falling from a nearly-vertical position or rising up to
 // that position.  The relationship is nearly linear; if you have the
-// 80mm wheels it should be about 200 - the angle is ~200 times its
+// 80mm wheels it should be about 140 - the angle is ~140 times its
 // rate, so for example when it falls to 90 degrees it will be moving
-// at 90,000/200 = 450 deg/s.
-const int16_t ANGLE_RATE_RATIO=200;
+// at 90,000/200 = 450 deg/s.  See the end of balancerExample.ino for
+// one way to calibrate this value.
+const int16_t ANGLE_RATE_RATIO=140;
 
 // The following three constants define a PID-like algorithm for
 // balancing.  Each one determines how much the motors will respond to
@@ -54,7 +55,9 @@ const int16_t DISTANCE_RESPONSE=73;
 const int16_t SPEED_RESPONSE=3300;
 
 // The balancing code is all based on a 100 Hz update rate; if you
-// change this, you will have to adjust many other things.
+// change this, you will have to adjust many other things.  If the
+// algorithm falls more than 1ms behind, it will turn on the red LED
+// to indicate a potential problem.
 const uint8_t UPDATE_TIME_MS=10;
 
 // Take 100 measurements initially to calibrate the gyro.
@@ -79,6 +82,11 @@ void balanceUpdate();
 // trying to balance.  When it falls down it shuts off the motors, and
 // this function will return false
 bool isBalancing();
+
+// Returns true if the last update cycle was delayed to more than
+// UPDATE_TIME_MS+1 milliseconds.  This could indicate computations
+// being too long or interrupts that are delaying the loop.
+bool balanceUpdateDelayed();
 
 // Sometimes you will want to take control of the motors but keep
 // updating the balancing code's encoders and angle measurements so

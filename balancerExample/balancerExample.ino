@@ -16,7 +16,9 @@ void setup()
   // motors.flipLeftMotor(true);
   // motors.flipRightMotor(true);
 
+  ledRed(1);
   balanceSetup();
+  ledRed(0);
 }
 
 const char song[] PROGMEM =
@@ -86,4 +88,29 @@ void loop()
   }
 
   balanceUpdate();
+
+  // Illuminate the red LED if the last full update was too slow.
+  ledRed(balanceUpdateDelayed());
+
+  // Display feedback on the yellow and green LEDs.  This is useful
+  // for calibrating ANGLE_RATE_RATIO: if the robot is released from
+  // nearly vertical and falls onto its bottom, the green LED should
+  // remain lit the entire time.  If it is tilted beyond vertical and
+  // given a push to fall back to its bottom side, the yellow LED
+  // should remain lit until it hits the ground.  In practice, it is
+  // hard to achieve both of these perfectly, but if you can get
+  // close, your constant will probably be good enough for balancing.
+  int32_t diff = angleRate*ANGLE_RATE_RATIO - angle;
+  if(diff > 0)
+  {
+    // On the top side, or pushed from the top side over to the bottom.
+    ledYellow(1);
+    ledGreen(0);
+  }
+  else
+  {
+    // On the bottom side, or pushed from the bottom over to the top.
+    ledYellow(0);
+    ledGreen(1);
+  }
 }
