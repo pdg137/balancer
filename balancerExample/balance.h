@@ -62,7 +62,7 @@ const uint8_t CALIBRATION_ITERATIONS=100;
 
 // These variables will be accessible from your project.
 extern int32_t angle; // units: millidegrees
-extern int32_t angle_rate; // units: degrees/s (or millidegrees/ms)
+extern int32_t angleRate; // units: degrees/s (or millidegrees/ms)
 extern Romi32U4Motors motors;
 
 // Call this function to adjust the robot's encoder measurements,
