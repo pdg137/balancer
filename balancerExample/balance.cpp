@@ -12,8 +12,10 @@ int32_t angle; // millidegrees
 int32_t angleRate; // degrees/s
 int32_t distanceLeft;
 int32_t speedLeft;
+int32_t driveLeft;
 int32_t distanceRight;
 int32_t speedRight;
+int32_t driveRight;
 int16_t motorSpeed;
 bool isBalancingStatus;
 bool balanceUpdateDelayedStatus;
@@ -101,12 +103,17 @@ void integrateEncoders()
   lastCountsRight = countsRight;
 }
 
-void balanceDrive(int16_t driveLeftTicks, int16_t driveRightTicks)
+void balanceDrive(int16_t left, int16_t right)
 {
-  distanceLeft += driveLeftTicks;
-  distanceRight += driveRightTicks;
-  speedLeft += driveLeftTicks;
-  speedRight += driveRightTicks;
+  driveLeft = left;
+  driveRight = right;
+}
+
+void balanceDoDriveTicks() {
+  distanceLeft += driveLeft;
+  distanceRight += driveRight;
+  speedLeft += driveLeft;
+  speedRight += driveRight;
 }
 
 void balanceSetup()
@@ -160,6 +167,7 @@ void balanceUpdate()
   lastMillis = ms;
 
   balanceUpdateSensors();
+  balanceDoDriveTicks();
 
   if(imu.a.x < 0)
   {

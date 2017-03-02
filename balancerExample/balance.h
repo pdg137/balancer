@@ -37,7 +37,7 @@ const int16_t ANGLE_RATE_RATIO=140;
 // moving and keep moving in the same direction, usually driving
 // faster and faster until it reaches its maximum motor speed and
 // falls over.  That's where the next constants come in.
-const int16_t ANGLE_RESPONSE=7;
+const int16_t ANGLE_RESPONSE=11;
 
 // DISTANCE_RESPONSE determines how much it resists being moved away
 // from its starting point.  Counterintuitively, this constant is
@@ -66,11 +66,15 @@ const uint8_t CALIBRATION_ITERATIONS=100;
 // These variables will be accessible from your project.
 extern int32_t angle; // units: millidegrees
 extern int32_t angleRate; // units: degrees/s (or millidegrees/ms)
+extern int16_t motorSpeed; // current (average) motor speed setting
 extern Romi32U4Motors motors;
 
-// Call this function to adjust the robot's encoder measurements,
-// which will cause it to drive in the corresponding direction.
-void balanceDrive(int16_t ticks_left, int16_t ticks_right);
+// Call this function to set a driving speed in ticks/ms.  The way it
+// works is that every update cycle we adjust the robot's encoder
+// measurements, which will cause it to drive in the corresponding
+// direction.  Differing values for left and right will result in a
+// turn.
+void balanceDrive(int16_t left, int16_t right);
 
 // Call this in your setup() to initialize and calibrate the IMU.
 void balanceSetup();
