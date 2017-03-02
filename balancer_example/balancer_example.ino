@@ -30,8 +30,10 @@ const char song[] PROGMEM =
 void drive_around()
 {
   if(!buzzer.isPlaying())
+  {
     buzzer.playFromProgramSpace(song);
-  
+  }
+
   uint16_t time = millis() % 8192;
   uint16_t drive_left, drive_right;
   if(time < 1900)
@@ -74,7 +76,7 @@ void loop()
       motors.setSpeeds(200,200);
       for(uint8_t i=0;i<20;i++)
       {
-        delay(10);
+        delay(UPDATE_TIME_MS);
         balance_update_sensors();
         if(angle < 60000)
           break;
@@ -82,6 +84,6 @@ void loop()
       balance_reset_encoders();
     }
   }
-  
+
   balance_update();
 }

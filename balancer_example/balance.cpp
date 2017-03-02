@@ -27,18 +27,18 @@ void balance()
   // drift toward w=0 with timescale ~10s
   angle = angle*999/1000;
 
-  int32_t diff = angle_rate*200 + angle;
+  int32_t diff = angle_rate*ANGLE_RATE_RATIO + angle;
   if(diff < -15000 || diff > 15000)
     ledYellow(1);
   else
     ledGreen(1);
 
-  motor_speed += ( 
-    + 7 * diff
-    + 73 * (distance_left + distance_right)
-    + 3300 * (speed_left + speed_right)
+  motor_speed += (
+    + ANGLE_RESPONSE * diff
+    + DISTANCE_RESPONSE * (distance_left + distance_right)
+    + SPEED_RESPONSE * (speed_left + speed_right)
     ) / 100 / GEAR_RATIO;
-  
+
   if(motor_speed > MOTOR_SPEED_LIMIT)
   {
     motor_speed = MOTOR_SPEED_LIMIT;
@@ -121,7 +121,7 @@ void balance_setup()
   // wait for IMU readings to stabilize
   ledRed(1);
   delay(1000);
-  
+
   // calibrate the gyro
   int i;
   int32_t g_y_total=0;
@@ -133,7 +133,7 @@ void balance_setup()
   }
 
   g_y_zero = g_y_total / CALIBRATION_ITERATIONS;
-  
+
   ledRed(0);
 }
 
@@ -164,7 +164,7 @@ void balance_update()
   last_ms = ms;
 
   balance_update_sensors();
- 
+
   if(imu.a.x < 0)
   {
     lying_down();
@@ -179,4 +179,3 @@ void balance_update()
     is_balancing_status = true;
   }
 }
-
