@@ -68,14 +68,32 @@ void driveAround()
 void standUp()
 {
   motors.setSpeeds(0,0);
-  buzzer.play("!frfr");
+  ledGreen(0);
+  ledRed(0);
+  ledYellow(0);
+  delay(5000);
+  ledGreen(1);
+  ledRed(1);
+  ledYellow(1);
+  delay(1000);
+//  buzzer.play("!frfr");
   while(buzzer.isPlaying());
-  buzzer.play(">c2");
-  motors.setSpeeds(-MOTOR_SPEED_LIMIT,-MOTOR_SPEED_LIMIT);
-  delay(400);
-  motors.setSpeeds(150,150);
+//  buzzer.play(">c2");
+
+  for(uint8_t i=0;i<40;i++)
+  {
+    motors.setSpeeds(-i*20, -i*20);
+    delay(UPDATE_TIME_MS);
+    balanceUpdateSensors();
+    if(speedLeft < -40)
+    {
+      break;
+    }
+  }
+
   for(uint8_t i=0;i<20;i++)
   {
+    motors.setSpeeds(i*20,i*20);
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
     if(angle < 60000)
@@ -96,8 +114,8 @@ void loop()
     // Once you have it balancing well, uncomment these lines for
     // something fun.
 
-    // playSong();
-    // driveAround();
+    //playSong();
+    //driveAround();
   }
   else
   {

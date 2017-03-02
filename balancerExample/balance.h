@@ -2,7 +2,7 @@
 // plastic gears, for an overall gear ratio of 111.  Adjust the ratio
 // below to scale various constants in the balancing algorithm to
 // match your robot.
-const int16_t GEAR_RATIO=111;
+const int16_t GEAR_RATIO=120;
 
 // This constant limits the maximum motor speed.  If your gear ratio
 // is lower than what we used, or if you are testing changes to the
@@ -67,6 +67,8 @@ const uint8_t CALIBRATION_ITERATIONS=100;
 extern int32_t angle; // units: millidegrees
 extern int32_t angleRate; // units: degrees/s (or millidegrees/ms)
 extern int16_t motorSpeed; // current (average) motor speed setting
+extern int32_t speedLeft;
+extern int32_t speedRight;
 extern Romi32U4Motors motors;
 
 // Call this function to set a driving speed in ticks/ms.  The way it
