@@ -10,6 +10,8 @@
 Romi32U4Buzzer buzzer;
 Romi32U4ButtonA buttonA;
 
+uint16_t start_time;
+
 void setup()
 {
   // Uncomment these lines if your motors are reversed.
@@ -27,7 +29,7 @@ const char song[] PROGMEM =
   "a-r gr g-gg-f er e-r d4 e-4"
   "gr msd8d8ml d-4d4"
   "l32efg-gl8r msd8d8ml d-4d4"
-  "cd-de-efg-g l32fg-ga-l8r gr g-4 gr";
+  "<bcd-d e-efg- ga-ab- a4 gr";
 
 void playSong()
 {
@@ -39,27 +41,34 @@ void playSong()
 
 void driveAround()
 {
-  uint16_t time = millis() % 8192;
+  uint16_t time = millis() - start_time;
   uint16_t left, right;
-  if(time < 1900)
+  const uint16_t TURN_TIME = 1650;
+  const uint16_t STRAIGHT_TIME = 600;
+  if(time < STRAIGHT_TIME)
   {
     left = 20;
     right = 20;
   }
-  else if(time < 4096)
+  else if(time < STRAIGHT_TIME+TURN_TIME)
   {
-    left = 25;
-    right = 15;
+    left = 22;
+    right = 5;
   }
-  else if(time < 4096+1900)
+  else if(time < STRAIGHT_TIME+TURN_TIME+STRAIGHT_TIME)
   {
     left = 20;
     right = 20;
+  }
+  else if(time < STRAIGHT_TIME+TURN_TIME+STRAIGHT_TIME+TURN_TIME)
+  {
+    left = 5;
+    right = 22;
   }
   else
   {
-    left = 15;
-    right = 25;
+    start_time += STRAIGHT_TIME+TURN_TIME+STRAIGHT_TIME+TURN_TIME;
+    return;
   }
 
   balanceDrive(left, right);
@@ -71,14 +80,12 @@ void standUp()
   ledGreen(0);
   ledRed(0);
   ledYellow(0);
-  delay(5000);
+//  delay(5000);
+  buzzer.play("!>grms>g16>g16>g2");
   ledGreen(1);
   ledRed(1);
   ledYellow(1);
-  delay(1000);
-//  buzzer.play("!frfr");
   while(buzzer.isPlaying());
-//  buzzer.play(">c2");
 
   for(uint8_t i=0;i<40;i++)
   {
@@ -114,8 +121,8 @@ void loop()
     // Once you have it balancing well, uncomment these lines for
     // something fun.
 
-    //playSong();
-    //driveAround();
+    playSong();
+    driveAround();
   }
   else
   {
@@ -123,6 +130,7 @@ void loop()
     if(buttonA.getSingleDebouncedPress())
     {
       standUp();
+      start_time = millis();
     }
   }
 
