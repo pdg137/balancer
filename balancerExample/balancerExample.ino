@@ -47,23 +47,23 @@ void driveAround()
   const uint16_t STRAIGHT_TIME = 600;
   if(time < STRAIGHT_TIME)
   {
-    left = 20;
-    right = 20;
+    left = -20;
+    right = -20;
   }
   else if(time < STRAIGHT_TIME+TURN_TIME)
   {
-    left = 22;
-    right = 5;
+    left = -22;
+    right = -5;
   }
   else if(time < STRAIGHT_TIME+TURN_TIME+STRAIGHT_TIME)
   {
-    left = 20;
-    right = 20;
+    left = -20;
+    right = -20;
   }
   else if(time < STRAIGHT_TIME+TURN_TIME+STRAIGHT_TIME+TURN_TIME)
   {
-    left = 5;
-    right = 22;
+    left = -5;
+    right = -22;
   }
   else
   {
@@ -80,7 +80,7 @@ void standUp()
   ledGreen(0);
   ledRed(0);
   ledYellow(0);
-//  delay(5000);
+  delay(5000);
   buzzer.play("!>grms>g16>g16>g2");
   ledGreen(1);
   ledRed(1);
@@ -114,13 +114,14 @@ void standUp()
 
 void loop()
 {
+  static bool started = false;
   balanceUpdate();
 
-  if(isBalancing())
+  if(isBalancing() || started)
   {
     // Once you have it balancing well, uncomment these lines for
     // something fun.
-
+    started = true;
     playSong();
     driveAround();
   }
