@@ -100,7 +100,8 @@ void standUp()
 
   for(uint8_t i=0;i<20;i++)
   {
-    motors.setSpeeds(i*20,i*20);
+    motorSpeed = i*20;
+    motors.setSpeeds(motorSpeed, motorSpeed);
     delay(UPDATE_TIME_MS);
     balanceUpdateSensors();
     if(angle < 60000)
@@ -108,7 +109,6 @@ void standUp()
       break;
     }
   }
-  motorSpeed = 150;
   balanceResetEncoders();
 }
 
